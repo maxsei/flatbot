@@ -37,7 +37,7 @@ def players_hooks():
         player = {"block": p_block_addr}
         # add player attributes
         for attribute, offset in offset_attributes:
-            player[attribute] = "0x%x" % (
+            player[attribute] = "%x" % (
                 int(p_block_addr, base=16) + int(offset, base=16)
             )
 
