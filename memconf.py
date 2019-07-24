@@ -8,8 +8,13 @@ ssbm_cfg = configparser.ConfigParser()
 ssbm_cfg.read(SSBM_CONFIG_FILENAME)
 sections = ssbm_cfg.sections()
 
+# _get_hooks returns a map containing names to memory addresses and vica versa
+# for a given section
 def _get_hooks(section):
-    return list(map(lambda x: x[1], ssbm_cfg.items(section)))
+    result = {}
+    result["ssbm_key"] = dict(ssbm_cfg.items(section))
+    result["mem_key"] = {v: k for k, v in result["ssbm_key"].items()}
+    return result
 
 
 def global_frame_counter_hooks():
@@ -31,18 +36,16 @@ def internal_character_id_hooks():
 def players_hooks():
     player_blocks = ssbm_cfg.items("player_blocks")
     offset_attributes = ssbm_cfg.items("player_offset_attributes")
-    players = {}
+    players = {"ssbm_key": {}, "mem_key": {}}
     for i in range(len(player_blocks)):
-        _, p_block_addr = player_blocks[i]
-        player = {"block": p_block_addr}
+        p_name, p_block_addr = player_blocks[i]
+        players["ssbm_key"][p_name] = p_block_addr
         # add player attributes
         for attribute, offset in offset_attributes:
-            player[attribute] = "%x" % (
+            players["ssbm_key"][p_name + "." + attribute] = "%x" % (
                 int(p_block_addr, base=16) + int(offset, base=16)
             )
-
-        players["p%d" % (i + 1)] = player
-
+    players["mem_key"] = {v: k for k, v in players["ssbm_key"].items()}
     return players
 
 
@@ -50,7 +53,8 @@ def cursor_positions_hooks():
     return _get_hooks("cursor_positions")
 
 
-ph = players_hooks()
-import json
+if __name__ == "__main__":
+    ph = players_hooks()
+    import json
 
-print(json.dumps(ph, indent=4))
+    print(json.dumps(ph, indent=4))

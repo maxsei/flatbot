@@ -23,20 +23,17 @@ def main():
     os.lseek(memory_locations_fd, 0, 0)
 
     # specify which hooks to get out of the configuration
-    hooks = []
+    hooks = {}
     # hooks.append(memconf.cursor_positions_hooks())
     # hooks.append(*memconf.game_duration_pause_toggle_hooks())
-    hooks.append(*memconf.global_frame_counter_hooks())
-    p1 = memconf.players_hooks()["p1"]
-    hooks.append(p1["x"])
-    hooks.append(p1["y"])
-    # hooks.append(p1["z"])
-    # hooks.append(p1["delta_x"])
-    # hooks.append(p1["delta_y"])
-    # hooks.append(p1["delta_z"])
+    hooks.update(memconf.global_frame_counter_hooks())
+    hooks.update(memconf.players_hooks())
+    import json
 
-    for hook in hooks:
-        os.write(memory_locations_fd, bytes(hook, encoding="utf-8"))
+    print(json.dumps(hooks, indent=4))
+
+    for addr in hooks["mem_key"]:
+        os.write(memory_locations_fd, bytes(addr, encoding="utf-8"))
         os.write(memory_locations_fd, bytes("\n", encoding="utf-8"))
     os.close(memory_locations_fd)
 
@@ -61,7 +58,7 @@ def main():
             data[1] = list(map(lambda x: x.zfill(8), data[1]))
             data[1] = list(map(lambda x: int(x, base=16), data[1]))
             # data[1] = list(map(lambda x: binascii.unhexlify(x), data[1]))
-            print(data)
+            print(data[0], data[1], hooks["mem_key"][data[0]])
             # data[1] = data[1].strip('\x00').zfill(8).split(",")
             # print(data)
             # for d in data[1]:
