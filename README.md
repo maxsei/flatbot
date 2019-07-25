@@ -11,10 +11,16 @@ functionality also built into dolphin.
   
 ## Notes  
 * Dolphin [makepkg] 5.0-7309 is the version I am using  
+* Much of the data is typed hex values  
+* data is comprized of memory locations with offsets that point to more  
+  specific data i.e. player block address plus some offset could give you the  
+  players stock count or x position  
+* frames terminate each transmission of data?  
   
 ## Things I Use Directly  
 [installed dolphin from here on the aur](https://www.archlinux.org/packages/community/x86_64/dolphin-emu/)  
 [watching game memory locations](https://github.com/dolphin-emu/dolphin/pull/3403)  
+[gregstoll float to hex converter](https://gregstoll.com/~gregstoll/floattohex/)  
   
 ## Inspired By  
 [meleelib](https://github.com/altf4/libmelee)  

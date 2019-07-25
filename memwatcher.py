@@ -3,6 +3,7 @@ import binascii
 import os
 import socket
 import sys
+from struct import unpack
 
 import memconf
 
@@ -10,29 +11,37 @@ MEMORY_LOCATIONS_NAME = "Locations.txt"
 MEMORY_SOCKET_NAME = "MemoryWatcher"
 MEMWATCH_DIR = "/home/maximillian/.local/share/dolphin-emu/MemoryWatcher/"
 
+# SIGNED_ADDRESSES = set([""])
+
 
 def main():
     memwatch_path = MEMWATCH_DIR + MEMORY_SOCKET_NAME
     locations_path = MEMWATCH_DIR + MEMORY_LOCATIONS_NAME
 
-    # truncate and append the hooks in the memory configuration file
+    # truncate and append the gamestate_hooks in the memory configuration file
     print(locations_path)
     memory_locations_fd = os.open(
         locations_path, os.O_TRUNC | os.O_APPEND | os.O_WRONLY
     )
     os.lseek(memory_locations_fd, 0, 0)
 
-    # specify which hooks to get out of the configuration
-    hooks = {}
-    # hooks.append(memconf.cursor_positions_hooks())
-    # hooks.append(*memconf.game_duration_pause_toggle_hooks())
-    hooks.update(memconf.global_frame_counter_hooks())
-    hooks.update(memconf.players_hooks())
+    # specify which gamestate_hooks to get out of the configuration
+    gamestate_hooks = {}
+
+    # gamestate_hooks.update(memconf.cursor_positions_gamestate_hooks())
+    # gamestate_hooks.update(memconf.game_duration_pause_toggle_gamestate_hooks())
+
+    # gamestate_hooks = update_gamestate_dict(
+    #     gamestate_hooks, memconf.global_frame_counter_hooks()
+    # )
+    gamestate_hooks = update_gamestate_dict(gamestate_hooks, memconf.players_hooks())
     import json
 
-    print(json.dumps(hooks, indent=4))
+    print(json.dumps(gamestate_hooks, indent=4))
 
-    for addr in hooks["mem_key"]:
+    print("writing addresses")
+    for addr in sorted(list(gamestate_hooks["mem_key"].keys()), reverse=True):
+        print(addr)
         os.write(memory_locations_fd, bytes(addr, encoding="utf-8"))
         os.write(memory_locations_fd, bytes("\n", encoding="utf-8"))
     os.close(memory_locations_fd)
@@ -50,26 +59,39 @@ def main():
     sock_fd.bind(memwatch_path)
 
     # listen on the socket for data
+    comma_char = 0x2C
     while True:
         try:
-            data = sock_fd.recv(1024).decode("utf-8").splitlines()
-            data[1] = data[1].strip("\x00")
-            data[1] = data[1].split(",")
-            data[1] = list(map(lambda x: x.zfill(8), data[1]))
-            data[1] = list(map(lambda x: int(x, base=16), data[1]))
-            # data[1] = list(map(lambda x: binascii.unhexlify(x), data[1]))
-            print(data[0], data[1], hooks["mem_key"][data[0]])
-            # data[1] = data[1].strip('\x00').zfill(8).split(",")
-            # print(data)
-            # for d in data[1]:
-            #     print(d,end="\t")
-            #     print(binascii.unhexlify(d))
-            # print(data)
+            data = sock_fd.recv(1024)
+            data = data.strip(b"\00")
+            data = bytes(filter(lambda x: x != comma_char, data))
+            data = data.split(b"\n")
+            # if data is float decode the data from a float
+            data = list(map(lambda x: x.zfill(8), data))
+            hexstr = data[1].decode("utf-8")
+            data[1] = unpack(">f", bytes.fromhex(hexstr))
+            print(data)
         except socket.timeout:
             continue
         except KeyboardInterrupt:
             sock_fd.close()
             break
+
+
+def decode_float():
+    pass
+
+
+# update_gamestate_dict takes the each key of the source dictionary and
+# stores it in the destination dictionary key: idk i'm tired
+def update_gamestate_dict(a, b):
+    if len(a.keys()) == 0:
+        return b
+    if len(b.keys()) == 0:
+        return a
+    for k in a:
+        a[k].update(b[k])
+    return a
 
 
 if __name__ == "__main__":
