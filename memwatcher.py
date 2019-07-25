@@ -18,32 +18,17 @@ def main():
     memwatch_path = MEMWATCH_DIR + MEMORY_SOCKET_NAME
     locations_path = MEMWATCH_DIR + MEMORY_LOCATIONS_NAME
 
-    # truncate and append the gamestate_hooks in the memory configuration file
-    print(locations_path)
     memory_locations_fd = os.open(
         locations_path, os.O_TRUNC | os.O_APPEND | os.O_WRONLY
     )
     os.lseek(memory_locations_fd, 0, 0)
 
-    # specify which gamestate_hooks to get out of the configuration
-    gamestate_hooks = {}
-
-    # gamestate_hooks.update(memconf.cursor_positions_gamestate_hooks())
-    # gamestate_hooks.update(memconf.game_duration_pause_toggle_gamestate_hooks())
-
-    # gamestate_hooks = update_gamestate_dict(
-    #     gamestate_hooks, memconf.global_frame_counter_hooks()
-    # )
-    gamestate_hooks = update_gamestate_dict(gamestate_hooks, memconf.players_hooks())
-    import json
-
-    print(json.dumps(gamestate_hooks, indent=4))
+    address_index, label_index = memconf.load_config(memconf.SSBM_CONFIG_FILENAME)
 
     print("writing addresses")
-    for addr in sorted(list(gamestate_hooks["mem_key"].keys()), reverse=True):
+    for addr in sorted(list(address_index.keys()), reverse=True):
         print(addr)
-        os.write(memory_locations_fd, bytes(addr, encoding="utf-8"))
-        os.write(memory_locations_fd, bytes("\n", encoding="utf-8"))
+        os.write(memory_locations_fd, bytes(addr + "\n", encoding="utf-8"))
     os.close(memory_locations_fd)
 
     # unlink the sockets whether or not it exists or not
@@ -66,11 +51,21 @@ def main():
             data = data.strip(b"\00")
             data = bytes(filter(lambda x: x != comma_char, data))
             data = data.split(b"\n")
-            # if data is float decode the data from a float
             data = list(map(lambda x: x.zfill(8), data))
-            hexstr = data[1].decode("utf-8")
-            data[1] = unpack(">f", bytes.fromhex(hexstr))
-            print(data)
+            data = list(map(lambda x: x.decode("utf-8"), data))
+            addr, hex_value = data[0], data[1]
+            # detect type and decode accordingly
+            dtype = type(address_index[addr]["value"]) 
+            if dtype == float:
+                hex_value = unpack(">f", bytes.fromhex(hex_value))[0]
+            elif dtype == int:
+                hex_value = unpack(">i", bytes.fromhex(hex_value))[0]
+            else:
+                pass
+                # decode hex value into string
+                # hex_value = 
+
+            print(addr, hex_value)
         except socket.timeout:
             continue
         except KeyboardInterrupt:
@@ -80,18 +75,6 @@ def main():
 
 def decode_float():
     pass
-
-
-# update_gamestate_dict takes the each key of the source dictionary and
-# stores it in the destination dictionary key: idk i'm tired
-def update_gamestate_dict(a, b):
-    if len(a.keys()) == 0:
-        return b
-    if len(b.keys()) == 0:
-        return a
-    for k in a:
-        a[k].update(b[k])
-    return a
 
 
 if __name__ == "__main__":

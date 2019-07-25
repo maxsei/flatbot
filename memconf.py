@@ -1,60 +1,56 @@
-import configparser
-import re
+import toml
+
+"""
+The responsibilities of this python script are to take the ssbm memory
+configuration and parse it.  Then hard memory address are calculated from the
+the offsets in the config for blocked memory addresses.
+"""
+SSBM_CONFIG_FILENAME = "ssbm-memory-config.toml"
+
+# offset_addr takes in an address and an offset to compute the offset address
+def _offset_addr(addr: str, offset: str):
+    return "%x" % ( int(addr, base=16) + int(offset, base=16) )
 
 
-SSBM_CONFIG_FILENAME = "ssbm-memory-config.ini"
+# load_config loads the toml configuation file and calculates all offset
+# addresses.
+def load_config(path: str):
+    # load config
+    config = None
+    with open(path, "r") as f:
+        config = toml.loads(f.read())
+    # split up config into differenent dictionaries
+    structure = config["structure"]
+    addresses = config["addresses"]
+    blocks = config["blocks"]
+    offsets = config["offsets"]
+    # compute offset data for each block data value
+    for cat in blocks:
+        for addr in blocks[cat]:
+            for offset in offsets[cat]:
+                addresses[_offset_addr(addr, offset)] = offsets[cat][offset]
 
-ssbm_cfg = configparser.ConfigParser()
-ssbm_cfg.read(SSBM_CONFIG_FILENAME)
-sections = ssbm_cfg.sections()
+    # swap memory addresses and labels to allow data indexing both ways
+    labels = {}
+    for addr in addresses:
+        # same thing as in addresses except labels and addresses are swapped
+        addr_dict = {}
+        for info in addresses[addr]:
+            if info == "label":
+                addr_dict["address"] = addr
+                continue
+            addr_dict[info] = addresses[addr][info]
+        labels[addresses[addr]["label"]] = addr_dict
 
-# _get_hooks returns a map containing names to memory addresses and vica versa
-# for a given section
-def _get_hooks(section):
-    result = {}
-    result["ssbm_key"] = dict(ssbm_cfg.items(section))
-    result["mem_key"] = {v: k for k, v in result["ssbm_key"].items()}
-    return result
-
-
-def global_frame_counter_hooks():
-    return _get_hooks("global_frame_counter")
-
-
-def per_character_action_state_hooks():
-    return _get_hooks("per_character_action_state")
-
-
-def game_duration_pause_toggle_hooks():
-    return _get_hooks("game_duration_pause_toggle")
-
-
-def internal_character_id_hooks():
-    return _get_hooks("internal_character_id")
-
-
-def players_hooks():
-    player_blocks = ssbm_cfg.items("player_blocks")
-    offset_attributes = ssbm_cfg.items("player_offset_attributes")
-    players = {"ssbm_key": {}, "mem_key": {}}
-    for i in range(len(player_blocks)):
-        p_name, p_block_addr = player_blocks[i]
-        players["ssbm_key"][p_name] = p_block_addr
-        # add player attributes
-        for attribute, offset in offset_attributes:
-            players["ssbm_key"][p_name + "." + attribute] = "%x" % (
-                int(p_block_addr, base=16) + int(offset, base=16)
-            )
-    players["mem_key"] = {v: k for k, v in players["ssbm_key"].items()}
-    return players
+    return addresses, labels
 
 
-def cursor_positions_hooks():
-    return _get_hooks("cursor_positions")
-
-
-if __name__ == "__main__":
-    ph = players_hooks()
+def test():
+    addresses, labels = load_config(SSBM_CONFIG_FILENAME)
     import json
 
-    print(json.dumps(ph, indent=4))
+    print(json.dumps(addresses, indent=4))
+    print(json.dumps(labels, indent=4))
+
+if __name__ == "__main__":
+    test()

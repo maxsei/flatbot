@@ -1,0 +1,103 @@
+# ================================================================================
+# README
+# ================================================================================
+#
+# This file is organized into 4 sections
+# 	- structure:
+# 		This outlines the primitive data structure of the data found in this
+# 		config which is a memory address mapping to a structure containing the
+# 		data label and the value( which implicitly holds type information ).
+# 		However, block data has no value because it's only perpose it to point
+# 		to other data.
+# 	- addresses:
+# 		These are addresses of values of the game that do not need to be
+# 		computed using offsets.
+# 	- blocks:
+# 		Block data describes the start of data blocks.  data blocks contain
+# 		memory locations that can be obtained by calculating the offset in the
+# 		offset section.  Block section headers have the same correspoding name
+# 		to their offsets making blocks and offsets indexable by each others
+# 		header information.
+# 	- offsets:
+# 		Offsets are used to calculate the abosolute addresses given a block of
+# 		data.  They typically represent attributes of a data structure similiar
+# 		to a "C" data structure. Block section headers have the same correspoding name
+# 		to their offsets making blocks and offsets indexable by each others
+# 		header information.
+#
+# Sources pull heavily from these resources which will be references in comments
+# as the following:
+# 	- Achilles1515:
+# 		https://github.com/Achilles1515/20XX-Melee-Hack-Pack/blob/master/SSBM%20Facts.txt:
+# 	- SSBM datasheet: 
+# 		https://docs.google.com/spreadsheets/d/1JX2w-r2fuvWuNgGb6D3Cs4wHQKLFegZe2jhbBuIhCG8/edit#gid=12
+#
+# ================================================================================
+# DATA
+# ================================================================================
+[structure]
+# the name the address represents
+label = "pichu_nair"	
+# numeric data either an int, float, or "string". hex values interpretted as int
+value = ""	# 0/0xdeadbeef, 0.0, "string"
+
+[addresses]
+
+	80479D60 = { label = "global_frame_counter", value = 0 }
+
+	803D4A50 = { label = "game_duration_pause_toggle", value = 0.0 }
+
+	8111674C = { label = "p4_cursor_x_position", value = 0.0 }
+	81116750 = { label = "p4_cursor_y_position", value = 0.0 }
+	811176EC = { label = "p3_cursor_x_position", value = 0.0 }
+	811176F0 = { label = "p3_cursor_y_position", value = 0.0 }
+	8111826C = { label = "p2_cursor_x_position", value = 0.0 }
+	81118270 = { label = "p2_cursor_y_position", value = 0.0 }
+	81118DEC = { label = "p1_cursor_x_position", value = 0.0 }
+	81118DF0 = { label = "p1_cursor_y_position", value = 0.0 }
+
+[blocks]
+
+	[blocks.player]
+	# blocks: represent a pointer to the beggining of a player
+	# struct that contains data about the player 
+	80453080 = "p1"
+	80453F10 = "p2"
+	80454DA0 = "p3"
+	80455C30 = "p4"
+
+	[blocks.match]
+	8046B6A0 = "match"
+
+	[blocks.stage]
+	8049E6C8 = "stage"
+
+[offsets]
+
+	[offsets.player]
+	10 = { label = "x", value = 0.0 }
+	14 = { label = "y", value = 0.0 }
+	# z is not needed and will bloat the socket
+	# 18 = { label = "z", value = 0.0 }
+	30 = { label = "direction", value = 0 }
+	60 = { label = "percentage", value = 0 }
+
+	[offsets.match]
+	# Set to 01 to initiate "match end" load sequence - Achilles1515
+	# 0000 = { label = "end", value = 0 }
+	# 8016c864, might be player ID that won the match (7 = no contest, 9 = training
+	# mode exit) - Achilles1515
+	0008 = { label = "", value = 0 } 
+	000D = { label = "player_last_died", value = 0x06 }
+	# 00=ingame, 01=match finished (I think.) - Achilles1515
+	000E = { label = "finished", value = 0 } 
+	0024 = { label = "frame_count", value = "" }
+	0028 = { label = "seconds_left", value = "" }
+	# 0x002C = { label = "subseconds", value = 0 }
+
+	[offsets.stage]
+	0x0074 = { label = "blastzone_left", value = 0.0 }
+	0x0078 = { label = "blastzone_right", value = 0.0 }
+	0x007C = { label = "blastzone_top", value = 0.0 }
+	0x0080 = { label = "blastzone_bottom", value = 0.0 }
+
