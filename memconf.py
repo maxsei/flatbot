@@ -1,11 +1,14 @@
 import toml
 
+
 """
 The responsibilities of this python script are to take the ssbm memory
 configuration and parse it.  Then hard memory address are calculated from the
 the offsets in the config for blocked memory addresses.
 """
+
 SSBM_CONFIG_FILENAME = "ssbm-memory-config.toml"
+
 
 # offset_addr takes in an address and an offset to compute the offset address
 def _offset_addr(addr: str, offset: str):

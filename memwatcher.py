@@ -7,55 +7,57 @@ from struct import unpack
 
 import memconf
 
+
 MEMORY_LOCATIONS_NAME = "Locations.txt"
 MEMORY_SOCKET_NAME = "MemoryWatcher"
 MEMWATCH_DIR = "/home/maximillian/.local/share/dolphin-emu/MemoryWatcher/"
 
-# SIGNED_ADDRESSES = set([""])
+# TODO: debug remove in production
+debug_labels = ["match.frame_count"]
 
 
 def main():
-    memwatch_path = MEMWATCH_DIR + MEMORY_SOCKET_NAME
-    locations_path = MEMWATCH_DIR + MEMORY_LOCATIONS_NAME
-
-    memory_locations_fd = os.open(
-        locations_path, os.O_TRUNC | os.O_APPEND | os.O_WRONLY
-    )
-    os.lseek(memory_locations_fd, 0, 0)
-
+    # set up socket path and memory locations path
+    socket_path = MEMWATCH_DIR + MEMORY_SOCKET_NAME
+    mem_locations_path = MEMWATCH_DIR + MEMORY_LOCATIONS_NAME
+    # load the configuation of addresses to watch
     address_index, label_index = memconf.load_config(memconf.SSBM_CONFIG_FILENAME)
 
-    print("writing addresses")
+    # open the memory locations file to be overwritten by the addresses in the
+    # memory configuration file ssbm-memory-config.toml
+    memory_locations_fd = os.open(
+        mem_locations_path, os.O_TRUNC | os.O_APPEND | os.O_WRONLY
+    )
+    os.lseek(memory_locations_fd, 0, 0)
     for addr in sorted(list(address_index.keys()), reverse=True):
-        print(addr)
         os.write(memory_locations_fd, bytes(addr + "\n", encoding="utf-8"))
     os.close(memory_locations_fd)
 
     # unlink the sockets whether or not it exists or not
     try:
-        os.unlink(memwatch_path)
+        os.unlink(socket_path)
     except OSError:
-        if os.path.exists(memwatch_path):
+        if os.path.exists(socket_path):
             raise
-
     # create a new socket to listen on
     sock_fd = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
     # bind and listen to the dolphin socket
-    sock_fd.bind(memwatch_path)
+    sock_fd.bind(socket_path)
 
-    # listen on the socket for data
-    comma_char = 0x2C
+    # comma char is used to filter out comma char read in through the socket
+    COMMA_CHAR = 0x2C
+    print("listening at %s..." % socket_path)
     while True:
         try:
             data = sock_fd.recv(1024)
             data = data.strip(b"\00")
-            data = bytes(filter(lambda x: x != comma_char, data))
+            data = bytes(filter(lambda x: x != COMMA_CHAR, data))
             data = data.split(b"\n")
             data = list(map(lambda x: x.zfill(8), data))
             data = list(map(lambda x: x.decode("utf-8"), data))
             addr, hex_value = data[0], data[1]
             # detect type and decode accordingly
-            dtype = type(address_index[addr]["value"]) 
+            dtype = type(address_index[addr]["value"])
             if dtype == float:
                 hex_value = unpack(">f", bytes.fromhex(hex_value))[0]
             elif dtype == int:
@@ -63,8 +65,9 @@ def main():
             else:
                 pass
 
-            if address_index[addr]["label"] == ""
-            print(addr, hex_value)
+            # TODO: debug remove in production
+            if address_index[addr]["label"] in debug_labels:
+                print(addr, hex_value, address_index[addr]["label"])
         except socket.timeout:
             continue
         except KeyboardInterrupt:

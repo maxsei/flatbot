@@ -91,7 +91,7 @@ value = ""	# 0/0xdeadbeef, 0.0, "string"
 	000D = { label = "player_last_died", value = 0x06 }
 	# 00=ingame, 01=match finished (I think.) - Achilles1515
 	000E = { label = "finished", value = 0 } 
-	0024 = { label = "frame_count", value = "" }
+	0024 = { label = "frame_count", value = 0 }
 	0028 = { label = "seconds_left", value = "" }
 	# 0x002C = { label = "subseconds", value = 0 }
 
