@@ -53,17 +53,17 @@ class Controller:
     buttons_x: Button = Button(name="X")
     buttons_y: Button = Button(name="Y")
     buttons_z: Button = Button(name="Z")
-    triggers_l: Button = Button(name="L")
-    triggers_r: Button = Button(name="R")
-    analog_l: Analog = Analog(name="L")
-    analog_r: Analog = Analog(name="R")
+    buttons_start: Button = Button(name="START")
+    main_stick: Stick = Stick(name="MAIN")
+    c_stick: Stick = Stick(name="C")
     d_pad_up: Button = Button(name="D_UP")
     d_pad_down: Button = Button(name="D_DOWN")
     d_pad_left: Button = Button(name="D_LEFT")
     d_pad_right: Button = Button(name="D_RIGHT")
-    buttons_start: Button = Button(name="START")
-    main_stick: Stick = Stick(name="MAIN")
-    c_stick: Stick = Stick(name="C")
+    triggers_l: Button = Button(name="L")
+    triggers_r: Button = Button(name="R")
+    analog_l: Analog = Analog(name="L")
+    analog_r: Analog = Analog(name="R")
 
 
 def main():
@@ -127,21 +127,72 @@ def main():
     controller = Controller()
     import random
 
-    while True:
-        try:
-            time.sleep(1)
-            push_button(controller.buttons_a, 1, dolphin_pipe, echo=True)
+    print("sending keys get ready...")
+    countdown = 3
+    for i in range(countdown):
+        print(countdown - i)
+        time.sleep(1)
+    collibrate_dolphin_controller(dolphin_pipe, 3, echo=True)
+    # while True:
+    #     try:
+    #         time.sleep(1)
+    #         push_button(controller.buttons_b, 1, dolphin_pipe, echo=True)
 
-            # set_stick_xy(
-            #     controller.main_stick, random.uniform(-1, 1), random.uniform(-1, 1)
-            # )
-            _send_stick_command(controller.main_stick, dolphin_pipe, echo=True)
-        except KeyboardInterrupt:
-            break
+    #         set_stick_xy(
+    #             controller.main_stick, random.uniform(-1, 1), random.uniform(-1, 1)
+    #         )
+    #         _send_stick_command(controller.main_stick, dolphin_pipe, echo=True)
+    #     except KeyboardInterrupt:
+    #         break
 
     reset_dolphin_controller(dolphin_pipe, echo=True)
     # close the pipe pointer
     os.close(dolphin_pipe)
+
+
+# collibrate_dolphin_controller will sequentially press each button once so be
+# ready in the dolphin controller configuration to listen for input.  Note if you
+# already have a configuration saved doing this is not necessary
+def collibrate_dolphin_controller(pipe, sleep_time, echo=False):
+    blank_controller = Controller()
+    # iterate over the default controller fields and send their results to dolphin
+    for f in fields(blank_controller):
+        controller_attr = getattr(blank_controller, f.name)
+        print("sending %s" % f.name, flush=True)
+        if f.type == type(Button()):
+            continue
+            time.sleep(sleep_time)
+            _send_button_command(BUTTON_PRESS, controller_attr, pipe, echo=echo)
+            time.sleep(0.05)
+            _send_button_command(BUTTON_RELEASE, controller_attr, pipe, echo=echo)
+            continue
+        # do stick commands manually up, down, left, right
+        if f.type == type(Stick()):
+            for x_sign, y_sign in [(0.0, 1.0), (0.0, -1.0), (-1.0, 0.0), (1.0, 0.0)]:
+                print(
+                    "moving stick to x: %.3f y: %.3f"
+                    % (STICK_NEUTRAL_X + x_sign, STICK_NEUTRAL_Y + y_sign)
+                )
+                time.sleep(sleep_time)
+                for i in range(9):
+                    set_stick_xy(
+                        controller_attr,
+                        STICK_NEUTRAL_X + x_sign * i * STICK_NEUTRAL_X / 8,
+                        STICK_NEUTRAL_Y + y_sign * i * STICK_NEUTRAL_Y / 8,
+                    )
+                    _send_stick_command(controller_attr, pipe, echo=echo)
+                    time.sleep(0.05)
+                set_stick_xy(controller_attr, STICK_NEUTRAL_X, STICK_NEUTRAL_Y)
+                time.sleep(0.05)
+                _send_stick_command(controller_attr, pipe, echo=echo)
+            continue
+        continue
+        set_analog_value(controller_attr, 1.0)
+        time.sleep(sleep_time)
+        _send_analog_command(controller_attr, pipe, echo=echo)
+        set_analog_value(controller_attr, 0.0)
+        time.sleep(0.05)
+        _send_analog_command(controller_attr, pipe, echo=echo)
 
 
 def reset_dolphin_controller(pipe, echo=False):
@@ -197,6 +248,14 @@ def set_stick_xy(stick: Stick, x: float, y: float):
     stick.y = y
 
 
+move_stick takes in a stick to move, a direction with the angle 0-360, the
+def move_stick(stick: Stick, direction:)
+    pass
+
+def release_stick(stick: Stick):
+    pass
+
+
 # _send_stick_command will send the command "SET stick_name X Y" to the specified
 # pipe and will echo the command if echo is set to true
 def _send_stick_command(stick: Stick, pipe: int, echo=False):
@@ -219,7 +278,9 @@ def set_analog_value(analog: Analog, value: float):
 
 # _send_analog_command will send the analog value to the dolphin controller
 def _send_analog_command(analog: Analog, pipe: int, echo=False):
-    cmd_bytestr = bytes("SET %s %f\n" % (analog.name, analog.value), encoding="utf-8")
+    cmd_bytestr = bytes(
+        "SET %s %f\n" % (analog.name, analog.value * 100), encoding="utf-8"
+    )
     if echo:
         os.write(1, cmd_bytestr)
     os.write(pipe, cmd_bytestr)

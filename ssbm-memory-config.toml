@@ -7,7 +7,7 @@
 # 		This outlines the primitive data structure of the data found in this
 # 		config which is a memory address mapping to a structure containing the
 # 		data label and the value( which implicitly holds type information ).
-# 		However, block data has no value because it's only perpose it to point
+# 		However, block da"ta has no value because it's only perpose it to point
 # 		to other data.
 # 	- addresses:
 # 		These are addresses of values of the game that do not need to be
@@ -45,16 +45,16 @@ value = ""	# 0/0xdeadbeef, 0.0, "string"
 
 	80479D60 = { label = "global_frame_counter", value = 0 }
 
-	803D4A50 = { label = "game_duration_pause_toggle", value = 0.0 }
+	# 803D4A50 = { label = "game_duration_pause_toggle", value = 0.0 }
 
-	8111674C = { label = "p4_cursor_x_position", value = 0.0 }
-	81116750 = { label = "p4_cursor_y_position", value = 0.0 }
-	811176EC = { label = "p3_cursor_x_position", value = 0.0 }
-	811176F0 = { label = "p3_cursor_y_position", value = 0.0 }
-	8111826C = { label = "p2_cursor_x_position", value = 0.0 }
-	81118270 = { label = "p2_cursor_y_position", value = 0.0 }
-	81118DEC = { label = "p1_cursor_x_position", value = 0.0 }
-	81118DF0 = { label = "p1_cursor_y_position", value = 0.0 }
+	# 8111674C = { label = "p4_cursor_x_position", value = 0.0 }
+	# 81116750 = { label = "p4_cursor_y_position", value = 0.0 }
+	# 811176EC = { label = "p3_cursor_x_position", value = 0.0 }
+	# 811176F0 = { label = "p3_cursor_y_position", value = 0.0 }
+	# 8111826C = { label = "p2_cursor_x_position", value = 0.0 }
+	# 81118270 = { label = "p2_cursor_y_position", value = 0.0 }
+	# 81118DEC = { label = "p1_cursor_x_position", value = 0.0 }
+	# 81118DF0 = { label = "p1_cursor_y_position", value = 0.0 }
 
 [blocks]
 
@@ -63,8 +63,8 @@ value = ""	# 0/0xdeadbeef, 0.0, "string"
 	# struct that contains data about the player 
 	80453080 = "p1"
 	80453F10 = "p2"
-	80454DA0 = "p3"
-	80455C30 = "p4"
+	# 80454DA0 = "p3"
+	# 80455C30 = "p4"
 
 	[blocks.match]
 	8046B6A0 = "match"
