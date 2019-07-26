@@ -1,0 +1,236 @@
+{
+    "80479D60": {
+        "label": "global_frame_counter",
+        "value": 0
+    },
+    "803D4A50": {
+        "label": "game_duration_pause_toggle",
+        "value": 0.0
+    },
+    "8111674C": {
+        "label": "p4_cursor_x_position",
+        "value": 0.0
+    },
+    "81116750": {
+        "label": "p4_cursor_y_position",
+        "value": 0.0
+    },
+    "811176EC": {
+        "label": "p3_cursor_x_position",
+        "value": 0.0
+    },
+    "811176F0": {
+        "label": "p3_cursor_y_position",
+        "value": 0.0
+    },
+    "8111826C": {
+        "label": "p2_cursor_x_position",
+        "value": 0.0
+    },
+    "81118270": {
+        "label": "p2_cursor_y_position",
+        "value": 0.0
+    },
+    "81118DEC": {
+        "label": "p1_cursor_x_position",
+        "value": 0.0
+    },
+    "81118DF0": {
+        "label": "p1_cursor_y_position",
+        "value": 0.0
+    },
+    "80453090": {
+        "label": "p4.p3.p2.p1.x",
+        "value": 0.0
+    },
+    "80453094": {
+        "label": "p4.p3.p2.p1.y",
+        "value": 0.0
+    },
+    "804530b0": {
+        "label": "p4.p3.p2.p1.direction",
+        "value": 0
+    },
+    "804530e0": {
+        "label": "p4.p3.p2.p1.percentage",
+        "value": 0
+    },
+    "80453f20": {
+        "label": "p4.p3.p2.p1.x",
+        "value": 0.0
+    },
+    "80453f24": {
+        "label": "p4.p3.p2.p1.y",
+        "value": 0.0
+    },
+    "80453f40": {
+        "label": "p4.p3.p2.p1.direction",
+        "value": 0
+    },
+    "80453f70": {
+        "label": "p4.p3.p2.p1.percentage",
+        "value": 0
+    },
+    "80454db0": {
+        "label": "p4.p3.p2.p1.x",
+        "value": 0.0
+    },
+    "80454db4": {
+        "label": "p4.p3.p2.p1.y",
+        "value": 0.0
+    },
+    "80454dd0": {
+        "label": "p4.p3.p2.p1.direction",
+        "value": 0
+    },
+    "80454e00": {
+        "label": "p4.p3.p2.p1.percentage",
+        "value": 0
+    },
+    "80455c40": {
+        "label": "p4.p3.p2.p1.x",
+        "value": 0.0
+    },
+    "80455c44": {
+        "label": "p4.p3.p2.p1.y",
+        "value": 0.0
+    },
+    "80455c60": {
+        "label": "p4.p3.p2.p1.direction",
+        "value": 0
+    },
+    "80455c90": {
+        "label": "p4.p3.p2.p1.percentage",
+        "value": 0
+    },
+    "8046b6a8": {
+        "label": "match.",
+        "value": 0
+    },
+    "8046b6ad": {
+        "label": "match.player_last_died",
+        "value": 6
+    },
+    "8046b6ae": {
+        "label": "match.finished",
+        "value": 0
+    },
+    "8046b6c4": {
+        "label": "match.frame_count",
+        "value": ""
+    },
+    "8046b6c8": {
+        "label": "match.seconds_left",
+        "value": ""
+    },
+    "8049e73c": {
+        "label": "stage.blastzone_left",
+        "value": 0.0
+    },
+    "8049e740": {
+        "label": "stage.blastzone_right",
+        "value": 0.0
+    },
+    "8049e744": {
+        "label": "stage.blastzone_top",
+        "value": 0.0
+    },
+    "8049e748": {
+        "label": "stage.blastzone_bottom",
+        "value": 0.0
+    }
+}
+{
+    "global_frame_counter": {
+        "address": "80479D60",
+        "value": 0
+    },
+    "game_duration_pause_toggle": {
+        "address": "803D4A50",
+        "value": 0.0
+    },
+    "p4_cursor_x_position": {
+        "address": "8111674C",
+        "value": 0.0
+    },
+    "p4_cursor_y_position": {
+        "address": "81116750",
+        "value": 0.0
+    },
+    "p3_cursor_x_position": {
+        "address": "811176EC",
+        "value": 0.0
+    },
+    "p3_cursor_y_position": {
+        "address": "811176F0",
+        "value": 0.0
+    },
+    "p2_cursor_x_position": {
+        "address": "8111826C",
+        "value": 0.0
+    },
+    "p2_cursor_y_position": {
+        "address": "81118270",
+        "value": 0.0
+    },
+    "p1_cursor_x_position": {
+        "address": "81118DEC",
+        "value": 0.0
+    },
+    "p1_cursor_y_position": {
+        "address": "81118DF0",
+        "value": 0.0
+    },
+    "p4.p3.p2.p1.x": {
+        "address": "80455c40",
+        "value": 0.0
+    },
+    "p4.p3.p2.p1.y": {
+        "address": "80455c44",
+        "value": 0.0
+    },
+    "p4.p3.p2.p1.direction": {
+        "address": "80455c60",
+        "value": 0
+    },
+    "p4.p3.p2.p1.percentage": {
+        "address": "80455c90",
+        "value": 0
+    },
+    "match.": {
+        "address": "8046b6a8",
+        "value": 0
+    },
+    "match.player_last_died": {
+        "address": "8046b6ad",
+        "value": 6
+    },
+    "match.finished": {
+        "address": "8046b6ae",
+        "value": 0
+    },
+    "match.frame_count": {
+        "address": "8046b6c4",
+        "value": ""
+    },
+    "match.seconds_left": {
+        "address": "8046b6c8",
+        "value": ""
+    },
+    "stage.blastzone_left": {
+        "address": "8049e73c",
+        "value": 0.0
+    },
+    "stage.blastzone_right": {
+        "address": "8049e740",
+        "value": 0.0
+    },
+    "stage.blastzone_top": {
+        "address": "8049e744",
+        "value": 0.0
+    },
+    "stage.blastzone_bottom": {
+        "address": "8049e748",
+        "value": 0.0
+    }
+}

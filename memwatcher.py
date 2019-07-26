@@ -62,9 +62,8 @@ def main():
                 hex_value = unpack(">i", bytes.fromhex(hex_value))[0]
             else:
                 pass
-                # decode hex value into string
-                # hex_value = 
 
+            if address_index[addr]["label"] == ""
             print(addr, hex_value)
         except socket.timeout:
             continue

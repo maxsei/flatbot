@@ -9,7 +9,7 @@ SSBM_CONFIG_FILENAME = "ssbm-memory-config.toml"
 
 # offset_addr takes in an address and an offset to compute the offset address
 def _offset_addr(addr: str, offset: str):
-    return "%x" % ( int(addr, base=16) + int(offset, base=16) )
+    return "%x" % (int(addr, base=16) + int(offset, base=16))
 
 
 # load_config loads the toml configuation file and calculates all offset
@@ -28,7 +28,11 @@ def load_config(path: str):
     for cat in blocks:
         for addr in blocks[cat]:
             for offset in offsets[cat]:
-                addresses[_offset_addr(addr, offset)] = offsets[cat][offset]
+                new_addr = _offset_addr(addr, offset)
+                addresses[new_addr] = offsets[cat][offset].copy()
+                addresses[new_addr]["label"] = (
+                    blocks[cat][addr] + "." + offsets[cat][offset]["label"]
+                )
 
     # swap memory addresses and labels to allow data indexing both ways
     labels = {}
@@ -51,6 +55,7 @@ def test():
 
     print(json.dumps(addresses, indent=4))
     print(json.dumps(labels, indent=4))
+
 
 if __name__ == "__main__":
     test()
