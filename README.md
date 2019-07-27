@@ -16,6 +16,8 @@ functionality also built into dolphin.
   specific data i.e. player block address plus some offset could give you the  
   players stock count or x position  
 * frames terminate each transmission of data?  
+* I am having issue with the C stick and Dolphin so the bot does not use the C  
+  stick for now  
   
 ## Things I Use Directly  
 [installed dolphin from here on the aur](https://www.archlinux.org/packages/community/x86_64/dolphin-emu/)  

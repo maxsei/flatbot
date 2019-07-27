@@ -1,1 +1,5 @@
 .README.html
+__pycache__/
+dumps/
+scratchpad-achilles.txt
+ssbm-facts.txt

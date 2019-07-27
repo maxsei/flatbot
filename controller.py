@@ -1,5 +1,10 @@
+"""
+This python file just mutates the state of a controller and that is all it will
+do.
+"""
 from dataclasses import dataclass
 from dataclasses import fields
+import math
 import os
 import sys
 import configparser
@@ -13,8 +18,7 @@ PIPE_PATH = "Pipes/flatbot"
 CONTROLLER_PATH = "Config/GCPadNew.ini"
 DOLPHIN_PATH = "Config/Dolphin.ini"
 
-STICK_NEUTRAL_X = 0.5
-STICK_NEUTRAL_Y = 0.5
+STICK_NEUTRAL = 0.5
 
 BUTTON_PRESS = "PRESS"
 BUTTON_RELEASE = "RELEASE"
@@ -26,6 +30,15 @@ CONTROLLER_UNPLUGGED = 0
 CONTROLLER_STANDARD = 6
 CONTROLLER_GCN_ADAPTER = 12
 
+CARDINAL_DIRECTIONS = {
+    # ordered for dolphin controller callibration
+    "up": 90.0,
+    "down": 270.0,
+    "left": 180.0,
+    "right": 0.0,
+}
+STICK_ITERATION_LENGTH = 0.043
+
 
 @dataclass
 class Button:
@@ -35,8 +48,8 @@ class Button:
 
 @dataclass
 class Stick:
-    x: float = STICK_NEUTRAL_X
-    y: float = STICK_NEUTRAL_Y
+    x: float = STICK_NEUTRAL
+    y: float = STICK_NEUTRAL
     name: str = ""
 
 
@@ -55,7 +68,7 @@ class Controller:
     buttons_z: Button = Button(name="Z")
     buttons_start: Button = Button(name="START")
     main_stick: Stick = Stick(name="MAIN")
-    c_stick: Stick = Stick(name="C")
+    c_stick: Stick = Stick(name="C-STICK")
     d_pad_up: Button = Button(name="D_UP")
     d_pad_down: Button = Button(name="D_DOWN")
     d_pad_left: Button = Button(name="D_LEFT")
@@ -69,51 +82,6 @@ class Controller:
 def main():
     # TODO: take in custom configuration of a controller could affect dolphin
     # contoller reset function
-    """
-    # read in the controller configuration from dolphin
-    controller_cfg = configparser.ConfigParser()
-    controller_cfg.read(controller_config_path)
-    controller_cfg = dict(controller_cfg.items(controller_cfg.sections()[0]))
-    # format command names correctly for echoing commands properly
-    commands = {}
-    for k in controller_cfg:
-        words = controller_cfg[k].split(" ")
-        if len(words) < 2:
-            continue
-        commands[k] = words[1].strip("`")
-
-    # configure controller with these commands
-    controller = Controller(
-        buttons_a=Button(False, commands["buttons/a"]),
-        buttons_b=Button(False, commands["buttons/b"]),
-        buttons_x=Button(False, commands["buttons/x"]),
-        buttons_y=Button(False, commands["buttons/y"]),
-        buttons_z=Button(False, commands["buttons/z"]),
-        triggers_l=Button(False, commands["triggers/l"]),
-        triggers_r=Button(False, commands["triggers/r"]),
-        d_pad_up=Button(False, commands["d-pad/up"]),
-        d_pad_down=Button(False, commands["d-pad/down"]),
-        d_pad_left=Button(False, commands["d-pad/left"]),
-        d_pad_right=Button(False, commands["d-pad/right"]),
-        buttons_start=Button(False, commands["buttons/start"]),
-        # there are multiple directions here but we can pick any directions
-        main_stick=Stick(STICK_NEUTRAL_X, STICK_NEUTRAL_Y, commands["main stick/up"]),
-        c_stick=Stick(STICK_NEUTRAL_X, STICK_NEUTRAL_Y, commands["c-stick/up"]),
-    )
-    """
-
-    # read in the dolphin config to configure with controller
-    # dolphin_config_path = DOLPHIN_DIR + DOLPHIN_PATH
-    # dolphin_config = configparser.ConfigParser()
-    # dolphin_config.read(dolphin_config_path)
-    # # setup standard input device on port 2 (for now) with background inputs
-    # # enabled i.e. window doesn't need to be in focus
-    # dolphin_config.set("Core", "sidevice0" + str(PORT), "%d" % CONTROLLER_STANDARD)
-    # dolphin_config.set("Input", "backgroundinput", "True")
-    # with open(dolphin_config_path, "w") as f:
-    #     dolphin_config.write(f)
-
-    # os.write()
 
     # paths to the controller configuration and the dolphin pipe
     flatbot_pipe_path = DOLPHIN_DIR + PIPE_PATH
@@ -122,7 +90,7 @@ def main():
     # open or create pipe if none exists
     if not os.path.exists(flatbot_pipe_path):
         os.mkfifo(flatbot_pipe_path)
-    dolphin_pipe = os.open(flatbot_pipe_path, os.O_WRONLY | os.O_SYNC)
+    dolphin_pipe = os.open(flatbot_pipe_path, os.O_WRONLY | os.O_NONBLOCK)
 
     controller = Controller()
     import random
@@ -132,82 +100,75 @@ def main():
     for i in range(countdown):
         print(countdown - i)
         time.sleep(1)
-    collibrate_dolphin_controller(dolphin_pipe, 3, echo=True)
+
+    _reset_controller(controller, dolphin_pipe, echo=True)
+    callibrate_controller(controller, dolphin_pipe, 1.5, echo=True)
     # while True:
     #     try:
     #         time.sleep(1)
     #         push_button(controller.buttons_b, 1, dolphin_pipe, echo=True)
 
-    #         set_stick_xy(
+    #         _set_stick_xy(
     #             controller.main_stick, random.uniform(-1, 1), random.uniform(-1, 1)
     #         )
     #         _send_stick_command(controller.main_stick, dolphin_pipe, echo=True)
     #     except KeyboardInterrupt:
     #         break
 
-    reset_dolphin_controller(dolphin_pipe, echo=True)
+    _reset_controller(controller, dolphin_pipe, echo=True)
     # close the pipe pointer
     os.close(dolphin_pipe)
 
 
-# collibrate_dolphin_controller will sequentially press each button once so be
+# callibrate_controller will sequentially press each button once so be
 # ready in the dolphin controller configuration to listen for input.  Note if you
 # already have a configuration saved doing this is not necessary
-def collibrate_dolphin_controller(pipe, sleep_time, echo=False):
-    blank_controller = Controller()
+def callibrate_controller(controller, pipe: int, callibration_intvl: float, echo=False):
     # iterate over the default controller fields and send their results to dolphin
-    for f in fields(blank_controller):
-        controller_attr = getattr(blank_controller, f.name)
-        print("sending %s" % f.name, flush=True)
-        if f.type == type(Button()):
-            continue
-            time.sleep(sleep_time)
+    for field in fields(controller):
+        controller_attr = getattr(controller, field.name)
+        if echo:
+            print("sending %s" % field.name, flush=True)
+        # button presses
+        if field.type == type(Button()):
+            time.sleep(callibration_intvl)
             _send_button_command(BUTTON_PRESS, controller_attr, pipe, echo=echo)
             time.sleep(0.05)
             _send_button_command(BUTTON_RELEASE, controller_attr, pipe, echo=echo)
             continue
         # do stick commands manually up, down, left, right
-        if f.type == type(Stick()):
-            for x_sign, y_sign in [(0.0, 1.0), (0.0, -1.0), (-1.0, 0.0), (1.0, 0.0)]:
-                print(
-                    "moving stick to x: %.3f y: %.3f"
-                    % (STICK_NEUTRAL_X + x_sign, STICK_NEUTRAL_Y + y_sign)
-                )
-                time.sleep(sleep_time)
-                for i in range(9):
-                    set_stick_xy(
-                        controller_attr,
-                        STICK_NEUTRAL_X + x_sign * i * STICK_NEUTRAL_X / 8,
-                        STICK_NEUTRAL_Y + y_sign * i * STICK_NEUTRAL_Y / 8,
-                    )
-                    _send_stick_command(controller_attr, pipe, echo=echo)
-                    time.sleep(0.05)
-                set_stick_xy(controller_attr, STICK_NEUTRAL_X, STICK_NEUTRAL_Y)
-                time.sleep(0.05)
-                _send_stick_command(controller_attr, pipe, echo=echo)
+        if field.type == type(Stick()):
+            for direction_name in CARDINAL_DIRECTIONS:
+                direction_value = CARDINAL_DIRECTIONS[direction_name]
+                if echo:
+                    print("moving %s in direction %s" % (field.name, direction_name))
+                time.sleep(callibration_intvl)
+                move_stick(controller_attr, pipe, direction_value, 0.5, echo=echo)
+                _release_stick(controller_attr, pipe, echo=echo)
             continue
-        continue
+        # analog shoulders
         set_analog_value(controller_attr, 1.0)
-        time.sleep(sleep_time)
+        time.sleep(callibration_intvl)
         _send_analog_command(controller_attr, pipe, echo=echo)
         set_analog_value(controller_attr, 0.0)
         time.sleep(0.05)
         _send_analog_command(controller_attr, pipe, echo=echo)
 
 
-def reset_dolphin_controller(pipe, echo=False):
-    blank_controller = Controller()
+# _reset_controller will reset the controller and will send this result back to
+# dolphin
+def _reset_controller(controller: Controller, pipe: int, echo=False):
     # iterate over the default controller fields and send their results to dolphin
-    for f in fields(blank_controller):
-        controller_attr = getattr(blank_controller, f.name)
-        if f.type == type(Button()):
+    for field in fields(controller):
+        controller_attr = getattr(controller, field.name)
+        if field.type == type(Button()):
             _send_button_command(BUTTON_RELEASE, controller_attr, pipe, echo=echo)
             continue
-        if f.type == type(Analog()):
+        if field.type == type(Analog()):
             set_analog_value(controller_attr, 0.0)
             _send_analog_command(controller_attr, pipe, echo=echo)
             continue
-        set_stick_xy(controller_attr, STICK_NEUTRAL_X, STICK_NEUTRAL_Y)
+        _set_stick_xy(controller_attr, STICK_NEUTRAL, STICK_NEUTRAL)
         _send_stick_command(controller_attr, pipe, echo=echo)
 
 
@@ -231,29 +192,82 @@ def _send_button_command(cmd: str, button: Button, pipe: int, echo=False):
     os.write(pipe, cmd_bytestr)
 
 
-# set_stick_xy will update the value of the stick to the new x and y locations
+# _set_stick_xy will update the value of the stick to the new x and y locations
 # TODO eventually program stick physics
-def set_stick_xy(stick: Stick, x: float, y: float):
+def _set_stick_xy(stick: Stick, x: float, y: float):
     # check proper values of x and y
     err = False
     if abs(x) > 1:
         err = True
-        os.write(2, b"x not between [-1.0, 1.0]: %d" % x)
+        os.write(2, b"x not between [-1.0, 1.0]: %.3f\n" % x)
     if abs(y) > 1:
         err = True
-        os.write(2, b"y not between [-1.0, 1.0]: %d" % y)
+        os.write(2, b"y not between [-1.0, 1.0]: %.3f\n" % y)
     if err:
         return
     stick.x = x
     stick.y = y
 
 
-move_stick takes in a stick to move, a direction with the angle 0-360, the
-def move_stick(stick: Stick, direction:)
-    pass
+# move_stick takes in a stick to move, a direction with the angle 0-360, the
+# distance in units of the stick and the speed to move at in units per frame
+#
+# if the distance exceeds the bounds of the stick it will be truncated found
+# that the human speed is: 5 frame of a video therefore 0.0833 seconds to reach
+# the radius of the control stick.  Since this input is fixed to 1/60th of a
+# second to account for each frame melee is eating inputs.  the max distance
+# step can only be 0.043 the STICK_ITERATION_LENGTH units per frame since the
+# radius of the control stick is .5 long
+def move_stick(stick: Stick, pipe: int, direction: float, distance: float, echo=False):
+    if direction < 0 or 360 < direction:
+        os.write(2, b"direction must be between [0.0, 360.0): %f" % direction)
+        return
+    new_x = stick.x + distance * math.cos(math.pi * direction / 180)
+    new_y = stick.y + distance * math.sin(math.pi * direction / 180)
+    # truncate the new x and y locations at the edges of the controller
+    new_x = max(0.0, min(1.0, new_x))
+    new_y = max(0.0, min(1.0, new_y))
+    # recalculate the distance and change in x and y
+    dx = new_x - stick.x
+    dy = new_y - stick.y
+    distance = (dx ** 2 + dy ** 2) ** 0.5
+    # avoid unecessary calucation
+    if distance < STICK_ITERATION_LENGTH:
+        _set_stick_xy(stick, new_x, new_y)
+        _send_stick_command(stick, pipe)
+        return
+    # iteratively move controller and send stick movements
+    steps = int(distance / STICK_ITERATION_LENGTH)
+    for i in range(1, steps + 1):
+        time.sleep(1 / 60)
+        _set_stick_xy(
+            stick, (new_x - dx) + dx * i / steps, (new_y - dy) + dy * i / steps
+        )
+        _send_stick_command(stick, pipe, echo=echo)
+    _set_stick_xy(stick, new_x, new_y)
 
-def release_stick(stick: Stick):
-    pass
+
+# _release_stick is just an alias for setting the a given stick back to a neutral
+# position
+def _release_stick(stick: Stick, pipe: int, echo=False):
+    distance = ((STICK_NEUTRAL - stick.x) ** 2 + (STICK_NEUTRAL - stick.y) ** 2) ** 0.5
+    direction = -1.0
+    if abs(stick.x - STICK_NEUTRAL) < STICK_ITERATION_LENGTH:
+        if stick.y < STICK_NEUTRAL:
+            direction = CARDINAL_DIRECTIONS["up"]
+        else:
+            direction = CARDINAL_DIRECTIONS["down"]
+    elif abs(stick.y - STICK_NEUTRAL) < STICK_ITERATION_LENGTH:
+        if stick.x < STICK_NEUTRAL:
+            direction = CARDINAL_DIRECTIONS["right"]
+        else:
+            direction = CARDINAL_DIRECTIONS["left"]
+    else:
+        direction = math.acos(stick.x / distance)
+        direction = (direction + 180) % 360
+    print("direction on release: %.3f distance: %.3f" % (direction, distance))
+    move_stick(stick, pipe, direction, distance, echo=echo)
+    _set_stick_xy(stick, STICK_NEUTRAL, STICK_NEUTRAL)
 
 
 # _send_stick_command will send the command "SET stick_name X Y" to the specified
@@ -271,7 +285,7 @@ def _send_stick_command(stick: Stick, pipe: int, echo=False):
 # set_analog_value modifies the value of an analog trigger
 def set_analog_value(analog: Analog, value: float):
     if value < 0 or 1 < value:
-        os.write(2, b"analog not between [0.0, 1.0]: %d" % cmd_bytestr)
+        os.write(2, b"analog not between [0.0, 1.0]: %d" % value)
         return
     analog.value = value
 
