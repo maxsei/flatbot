@@ -68,7 +68,8 @@ class Controller:
     buttons_z: Button = Button(name="Z")
     buttons_start: Button = Button(name="START")
     main_stick: Stick = Stick(name="MAIN")
-    c_stick: Stick = Stick(name="C-STICK")
+    # TODO: fix c stick
+    # c_stick: Stick = Stick(name="C")
     d_pad_up: Button = Button(name="D_UP")
     d_pad_down: Button = Button(name="D_DOWN")
     d_pad_left: Button = Button(name="D_LEFT")
@@ -205,6 +206,7 @@ def _set_stick_xy(stick: Stick, x: float, y: float):
         os.write(2, b"y not between [-1.0, 1.0]: %.3f\n" % y)
     if err:
         return
+
     stick.x = x
     stick.y = y
 
