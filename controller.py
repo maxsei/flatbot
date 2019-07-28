@@ -69,7 +69,7 @@ class Controller:
     buttons_start: Button = Button(name="START")
     main_stick: Stick = Stick(name="MAIN")
     # TODO: fix c stick
-    # c_stick: Stick = Stick(name="C")
+    c_stick: Stick = Stick(name="C")
     d_pad_up: Button = Button(name="D_UP")
     d_pad_down: Button = Button(name="D_DOWN")
     d_pad_left: Button = Button(name="D_LEFT")
@@ -103,7 +103,7 @@ def main():
         time.sleep(1)
 
     _reset_controller(controller, dolphin_pipe, echo=True)
-    callibrate_controller(controller, dolphin_pipe, 1.5, echo=True)
+    callibrate_controller(controller, dolphin_pipe, 0.1, echo=True)
     # while True:
     #     try:
     #         time.sleep(1)
