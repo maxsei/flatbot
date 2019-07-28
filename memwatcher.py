@@ -17,14 +17,14 @@ MEMWATCH_DIR = "/home/maximillian/.local/share/dolphin-emu/MemoryWatcher/"
 # TODO: debug remove in production
 DEBUG_LABELS = [
     # "global_frame_counter",
-    # "p1.x",
+    "p1.x",
     # "p1.y",
     # "p1.direction",
-    "p1.percentage",
+    # "p1.percentage",
     # "p2.x",
     # "p2.y",
     # "p2.direction",
-    "p2.percentage",
+    # "p2.percentage",
     # "match.",
     # "match.player_last_died",
     # "match.finished",
@@ -57,8 +57,9 @@ def main():
     # unlink the sockets whether or not it exists or not
     try:
         os.unlink(socket_path)
-    except OSError:
         if os.path.exists(socket_path):
+            pass
+    except OSError:
             raise
     # create a new socket to listen on
     sock_fd = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
@@ -71,16 +72,14 @@ def main():
     df = pd.DataFrame(columns=list(current_values_dict.keys()))
     print(df.T)
 
-    # comma char is used to filter out comma char read in through the socket
-    COMMA_CHAR = 0x2C
     print("listening at %s..." % socket_path)
     while True:
         try:
             data = sock_fd.recv(1024)
-            # remove the null termination, commas, split on line, padd hex with
+            # remove the null termination and newline, split on line, padd hex with
             # zeroes, and decode into utf-8 strings
             data = data.strip(b"\00")
-            data = bytes(filter(lambda x: x != COMMA_CHAR, data))
+            data = data.strip(b"\n")
             data = data.split(b"\n")
             data = list(map(lambda x: x.zfill(8), data))
             data = list(map(lambda x: x.decode("utf-8"), data))

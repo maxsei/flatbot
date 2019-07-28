@@ -1,6 +1,14 @@
 """
 This python file just mutates the state of a controller and that is all it will
-do.
+do do not ask of it much else it tries its best.
+The intention of this script is to serve two purposes:
+    - the way to configure the dolphin controller for the pipe (executable)
+    - a means for the agent to interface with the game(package)
+
+When configuring, make sure you have a profile for the controller existing at in
+/path/to/dolphinconfig/Profiles/GCPad/flatbot.ini
+also running the latest version of dolphin couldn't hurt either or at least
+Dolphin 5.0-10715
 """
 from dataclasses import dataclass
 from dataclasses import fields
@@ -37,7 +45,7 @@ CARDINAL_DIRECTIONS = {
     "left": 180.0,
     "right": 0.0,
 }
-STICK_ITERATION_LENGTH = 0.043
+STICK_ITERATION_LENGTH = 5 / 60
 
 
 @dataclass
@@ -103,19 +111,7 @@ def main():
         time.sleep(1)
 
     _reset_controller(controller, dolphin_pipe, echo=True)
-    callibrate_controller(controller, dolphin_pipe, 0.1, echo=True)
-    # while True:
-    #     try:
-    #         time.sleep(1)
-    #         push_button(controller.buttons_b, 1, dolphin_pipe, echo=True)
-
-    #         _set_stick_xy(
-    #             controller.main_stick, random.uniform(-1, 1), random.uniform(-1, 1)
-    #         )
-    #         _send_stick_command(controller.main_stick, dolphin_pipe, echo=True)
-    #     except KeyboardInterrupt:
-    #         break
-
+    callibrate_controller(controller, dolphin_pipe, 1.5, echo=True)
     _reset_controller(controller, dolphin_pipe, echo=True)
     # close the pipe pointer
     os.close(dolphin_pipe)
