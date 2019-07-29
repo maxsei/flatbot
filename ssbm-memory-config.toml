@@ -43,7 +43,7 @@ value = ""	# 0/0xdeadbeef, 0.0, "string"
 
 [addresses]
 
-	80479D60 = { label = "global_frame_counter", value = 0 }
+	# 80479D60 = { label = "global_frame_counter", value = 0 }
 
 	# 803D4A50 = { label = "game_duration_pause_toggle", value = 0.0 }
 
