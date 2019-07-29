@@ -50,7 +50,7 @@ STICK_ITERATION_LENGTH = 5 / 60
 
 @dataclass
 class Button:
-    pressed: bool = False
+    pressed: bool = 0
     name: str = ""
 
 
@@ -59,6 +59,7 @@ class Stick:
     x: float = STICK_NEUTRAL
     y: float = STICK_NEUTRAL
     name: str = ""
+    last_direction: float = 0.0
 
 
 @dataclass
@@ -76,51 +77,39 @@ class Controller:
     buttons_z: Button = Button(name="Z")
     buttons_start: Button = Button(name="START")
     main_stick: Stick = Stick(name="MAIN")
-    # TODO: fix c stick
     c_stick: Stick = Stick(name="C")
-    d_pad_up: Button = Button(name="D_UP")
-    d_pad_down: Button = Button(name="D_DOWN")
-    d_pad_left: Button = Button(name="D_LEFT")
-    d_pad_right: Button = Button(name="D_RIGHT")
+    # my bot won't disrespect
+    # d_pad_up: Button = Button(name="D_UP")
+    # d_pad_down: Button = Button(name="D_DOWN")
+    # d_pad_left: Button = Button(name="D_LEFT")
+    # d_pad_right: Button = Button(name="D_RIGHT")
     triggers_l: Button = Button(name="L")
     triggers_r: Button = Button(name="R")
     analog_l: Analog = Analog(name="L")
     analog_r: Analog = Analog(name="R")
 
 
-def main():
-    # TODO: take in custom configuration of a controller could affect dolphin
-    # contoller reset function
-
-    # paths to the controller configuration and the dolphin pipe
-    flatbot_pipe_path = DOLPHIN_DIR + PIPE_PATH
-    controller_config_path = DOLPHIN_DIR + CONTROLLER_PATH
-
-    # open or create pipe if none exists
-    if not os.path.exists(flatbot_pipe_path):
-        os.mkfifo(flatbot_pipe_path)
-    dolphin_pipe = os.open(flatbot_pipe_path, os.O_WRONLY | os.O_NONBLOCK)
-
-    controller = Controller()
-    import random
-
-    print("sending keys get ready...")
-    countdown = 3
-    for i in range(countdown):
-        print(countdown - i)
-        time.sleep(1)
-
-    _reset_controller(controller, dolphin_pipe, echo=True)
-    callibrate_controller(controller, dolphin_pipe, 1.5, echo=True)
-    _reset_controller(controller, dolphin_pipe, echo=True)
-    # close the pipe pointer
-    os.close(dolphin_pipe)
+# controller_dict returns a dictionary of the controllers current state
+def controller_state(controller: Controller) -> dict:
+    result = {}
+    for field in fields(controller):
+        controller_attr = getattr(controller, field.name)
+        if field.type == type(Button()):
+            result[field.name] = controller_attr.pressed
+            continue
+        if field.type == type(Stick()):
+            result["%s.x" % field.name] = controller_attr.x
+            result["%s.y" % field.name] = controller_attr.y
+            continue
+        # analog
+        result[field.name] = controller_attr.value
+    return result
 
 
 # callibrate_controller will sequentially press each button once so be
 # ready in the dolphin controller configuration to listen for input.  Note if you
 # already have a configuration saved doing this is not necessary
-def callibrate_controller(controller, pipe: int, callibration_intvl: float, echo=False):
+def callibrate_controller(controller: Controller, pipe: int, intvl: float, echo=False):
     # iterate over the default controller fields and send their results to dolphin
     for field in fields(controller):
         controller_attr = getattr(controller, field.name)
@@ -128,7 +117,7 @@ def callibrate_controller(controller, pipe: int, callibration_intvl: float, echo
             print("sending %s" % field.name, flush=True)
         # button presses
         if field.type == type(Button()):
-            time.sleep(callibration_intvl)
+            time.sleep(intvl)
             _send_button_command(BUTTON_PRESS, controller_attr, pipe, echo=echo)
             time.sleep(0.05)
             _send_button_command(BUTTON_RELEASE, controller_attr, pipe, echo=echo)
@@ -139,13 +128,13 @@ def callibrate_controller(controller, pipe: int, callibration_intvl: float, echo
                 direction_value = CARDINAL_DIRECTIONS[direction_name]
                 if echo:
                     print("moving %s in direction %s" % (field.name, direction_name))
-                time.sleep(callibration_intvl)
+                time.sleep(intvl)
                 move_stick(controller_attr, pipe, direction_value, 0.5, echo=echo)
                 _release_stick(controller_attr, pipe, echo=echo)
             continue
         # analog shoulders
         set_analog_value(controller_attr, 1.0)
-        time.sleep(callibration_intvl)
+        time.sleep(intvl)
         _send_analog_command(controller_attr, pipe, echo=echo)
         set_analog_value(controller_attr, 0.0)
         time.sleep(0.05)
@@ -169,15 +158,48 @@ def _reset_controller(controller: Controller, pipe: int, echo=False):
         _send_stick_command(controller_attr, pipe, echo=echo)
 
 
+def main():
+    # TODO: take in custom configuration of a controller could affect dolphin
+    # controller reset function
+    # open or create pipe if none exists
+    dolphin_pipe = dolphin_input_pipe()
+
+    controller = Controller()
+    print(type(controller))
+    # print("sending keys get ready...")
+    # countdown = 3
+    # for i in range(countdown):
+    #     print(countdown - i)
+    #     time.sleep(1)
+
+    _reset_controller(controller, dolphin_pipe, echo=True)
+    callibrate_controller(controller, dolphin_pipe, 1.5, echo=True)
+    # close the pipe pointer
+    os.close(dolphin_pipe)
+
+
+# dolphin_input_pipe returns a file descriptor for the dolphin pipe
+def dolphin_input_pipe() -> int:
+    # paths to the controller configuration and the dolphin pipe
+    flatbot_pipe_path = DOLPHIN_DIR + PIPE_PATH
+    controller_config_path = DOLPHIN_DIR + CONTROLLER_PATH
+
+    # open or create pipe if none exists
+    if not os.path.exists(flatbot_pipe_path):
+        os.mkfifo(flatbot_pipe_path)
+    dolphin_pipe = os.open(flatbot_pipe_path, os.O_WRONLY | os.O_NONBLOCK)
+    return dolphin_pipe
+
+
 # push_button and depress a button after a certain time.  The button passed to
 # this function is passed by reference and therefor the state of the button is
 # modified
 def push_button(button: Button, duration: float, pipe: int, echo=False):
     _send_button_command(BUTTON_PRESS, button, pipe, echo=echo)
-    button.pressed = True
+    button.pressed = 1
     time.sleep(duration)
     _send_button_command(BUTTON_RELEASE, button, pipe, echo=echo)
-    button.pressed = False
+    button.pressed = 0
 
 
 # _send_button_command will send the desired button "PRESS/RELEASE BUTTON ?" to
@@ -217,6 +239,7 @@ def _set_stick_xy(stick: Stick, x: float, y: float):
 # step can only be 0.043 the STICK_ITERATION_LENGTH units per frame since the
 # radius of the control stick is .5 long
 def move_stick(stick: Stick, pipe: int, direction: float, distance: float, echo=False):
+    stick.last_direction = direction
     if direction < 0 or 360 < direction:
         os.write(2, b"direction must be between [0.0, 360.0): %f" % direction)
         return
@@ -263,7 +286,8 @@ def _release_stick(stick: Stick, pipe: int, echo=False):
     else:
         direction = math.acos(stick.x / distance)
         direction = (direction + 180) % 360
-    print("direction on release: %.3f distance: %.3f" % (direction, distance))
+    if echo:
+        print("direction on release: %.3f distance: %.3f" % (direction, distance))
     move_stick(stick, pipe, direction, distance, echo=echo)
     _set_stick_xy(stick, STICK_NEUTRAL, STICK_NEUTRAL)
 
