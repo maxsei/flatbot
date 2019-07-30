@@ -83,8 +83,8 @@ def main()->int:
                     static_labels[label] = hex_value
                     init_counter += 1
 
-            if update and init_counter % len(static_labels) and init_counter > 0:
-                game_history = game_history.drop(game_history)
+            if update and not init_counter % len(static_labels) and init_counter > 0:
+                game_history = game_history.drop(game_history.index)
                 # create q table by adding the initialized values
                 for i, q_type in enumerate(q_index):
                     q_range = q_index[q_type]
