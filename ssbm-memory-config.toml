@@ -36,23 +36,30 @@
 # DATA
 # ================================================================================
 
-# q_types map to where a peice of data falls in the q table.  data that
-# contributes to the bounds of a q_type has the q type "static". Data that
-# depends on the q table for its bounds has the corresponding name of the q_type
-# it depends on i.e. q_type = "x" depends on x.  There are some value that are
-# hard coded for the game such as percentage ranging from 0-999
-[q_types]
-x = { min = "stage.blastzone_left", max =  "stage.blastzone_right" }
-y = { min = "stage.blastzone_bottom", max =  "stage.blastzone_top" }
-percentage = { min = 0, max = 999 }
-
 
 [structure]
 # the first the memory block then a dot then the offset
 label = "pichu.nair"	
 # numeric data either an int, float, or "string". hex values interpretted as int
 value = ""	# 0/0xdeadbeef, 0.0, "string"
+# type of data to decode "float" "int" "string" "short"
 type = "uint"
+# what this struture maps to on the q table
+q_type = "attack"
+
+# q_types map to where a peice of data falls in the q table.  data that
+# contributes to the bounds of a q_type has the q type "static". Data that
+# depends on the q table for its bounds has the corresponding name of the q_type
+# it depends on i.e. q_type = "x" depends on x.  There are some value that are
+# hard coded for the game such as percentage ranging from 0-999
+[rewards]
+p1.falls=1.0
+p2.falls=-1.0
+
+[q_types]
+x = { min = "stage.blastzone_left", max = "stage.blastzone_right" }
+y = { min = "stage.blastzone_bottom", max = "stage.blastzone_top" }
+percentage = { min = 0, max = 300 } # could be 999 but 300 is more realistic
 
 [addresses]
 
@@ -88,21 +95,19 @@ type = "uint"
 [offsets]
 
 	[offsets.player]
-	10 = { label = "x", value = 0.0 , type = "float", q_type = "x" }
-	14 = { label = "y", value = 0.0 , type = "float", q_type = "y" }
-	# z is not needed
-	# 18 = { label = "z", value = 0.0 , type = "float" }
-	# 30 = { label = "direction", value = 0 , type = "float" }
+	10 = { label = "x", value = 0.0 , type = "float", q_type = "x", mod = "volitile" }
+	14 = { label = "y", value = 0.0 , type = "float", q_type = "y", mod = "volitile" }
+	# 30 = { label = "direction", value = 0 , type = "float", mod = "volitile" }
 	# Facing direction	Float. 1 is right, -1 is left
-	# 40 = { label = "facing_direction", value = 0.0 , type = "float" }
-	60 = { label = "percentage", value = 0 , type = "short", q_type = "percentage" }
+	# 40 = { label = "facing_direction", value = 0.0 , type = "float", mod = "volitile" }
+	60 = { label = "percentage", value = 0 , type = "short", q_type = "percentage", mod = "volitile" }
 	# generic entity pointer
 	B0 = "entity"
-	68 = { label = "falls", value = 0 , type = "string" }
-	# 8E = { label = "stocks", value = 0 , type = "int" }
+	68 = { label = "falls", value = 0 , type = "int", mod = "volitile" }
+	# 8E = { label = "stocks", value = 0 , type = "int", mod = "volitile" }
 
 	# 0 = normal, 1 = invulnerable, 2 = intangible
-	# 1988 = { label = "body_state", value = 0 , type = "string" }
+	# 1988 = { label = "body_state", value = 0 , type = "string", mod = "volitile" }
 
 	[offsets.match]
 	# Set to 01 to initiate "match end" load sequence - Achilles1515
@@ -112,16 +117,15 @@ type = "uint"
 	# 0008 = { label = "winner_player_id", value = 0 , type = "string" } 
 	# 000D = { label = "player_last_died", value = 0x06 , type = "short" }
 	# 00=ingame, 01=match finished (I think.) - Achilles1515
-	000E = { label = "finished", value = 0 , type = "short" } 
-	0024 = { label = "frame_count", value = 0 , type = "int" }
+	0024 = { label = "frame_count", value = 0 , type = "int", mod = "volitile" }
 	# 0028 = { label = "seconds_left", value = "" , type = "int" }
 	# 0x002C = { label = "subseconds", value = 0 , type = "" }
 
 	[offsets.stage]
-	0074 = { label = "blastzone_left", value = 0.0 , type = "float", q_types = "static" }
-	0078 = { label = "blastzone_right", value = 0.0 , type = "float", q_types = "static" }
-	007C = { label = "blastzone_top", value = 0.0 , type = "float", q_types = "static" }
-	0080 = { label = "blastzone_bottom", value = 0.0 , type = "float", q_types = "static" }
+	0074 = { label = "blastzone_left", value = 0.0 , type = "float", mod = "static" }
+	0078 = { label = "blastzone_right", value = 0.0 , type = "float", mod = "static" }
+	007C = { label = "blastzone_top", value = 0.0 , type = "float", mod = "static" }
+	0080 = { label = "blastzone_bottom", value = 0.0 , type = "float", mod = "static" }
 
 	[offsets.entity]
-	# 2C = { label = "facing_direction", value = 0.0 , type = "float" }
+	2C = { label = "facing_direction", value = 0.0 , type = "float" }

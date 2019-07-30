@@ -1,3 +1,4 @@
+import numpy as np
 import toml
 
 """
@@ -14,45 +15,9 @@ def _offset_addr(addr: str, offset: str):
     return "%x" % (int(addr, base=16) + int(offset, base=16))
 
 
-import time
-
-
-def __get_offsets(blocks: dict, addr: str, offsets: dict, cat: str):
-    result = {}
-    cat_trace = cat.split(".")
-    if type(cat_trace) == list:
-        cat = cat_trace[-1]
-
-    new_offsets = {}
-    for offset in offsets[cat]:
-        # pointers are only stored in the config as strings
-        if type(offsets[cat][offset]) == str:
-            sub = _get_offsets(
-                offsets.copy(),
-                offset,
-                offsets.copy(),
-                ".".join(cat_trace) + "." + offsets[cat][offset],
-            )
-            new_offsets.update(sub)
-            continue
-        new_offsets[offset] = offsets[cat][offset]
-
-    for offset in new_offsets:
-        if type(new_offsets[offset]) == str:
-            continue
-        new_addr = _offset_addr(addr, offset)
-        result[new_addr] = new_offsets[offset].copy()
-        print(list(map(lambda x: offsets[x], cat_trace)))
-        print(offsets)
-        print(cat_trace)
-        result[new_addr]["label"] = (
-            ".".join(list(map(lambda x: offsets[x]["label"], cat_trace)))
-            + "."
-            + new_offsets[offset]["label"]
-        )
-    return result
-
-
+# _get_offsets will recursively get the offsets of a a peice of data in the config
+# by doing "pointer arithmetic" unitil it reaches data without any further
+# pointers
 def _get_offsets(block_sect: dict, addr: str, offsets: dict, common_cat: str):
     result = {}
     addr_label = block_sect[addr]
@@ -61,7 +26,9 @@ def _get_offsets(block_sect: dict, addr: str, offsets: dict, common_cat: str):
     for offset in offsets[common_cat]:
         # if offsets is of type pointer get its offsets
         if type(offsets[common_cat][offset]) == str:
-            offset_offsets = _get_offsets(offsets[common_cat], offset, offsets, offsets[common_cat][offset])
+            offset_offsets = _get_offsets(
+                offsets[common_cat], offset, offsets, offsets[common_cat][offset]
+            )
             new_offsets.update(offset_offsets)
             continue
         new_offsets[offset] = offsets[common_cat][offset].copy()
@@ -75,12 +42,10 @@ def _get_offsets(block_sect: dict, addr: str, offsets: dict, common_cat: str):
 
 
 # load_config loads the toml configuation file and calculates all offset
-# addresses.
-def load_config(path: str):
+# addresses.  It returns address and label indexes dictionaries of all data
+def load_config(path: str) -> (dict, dict):
     # load config
-    config = None
-    with open(path, "r") as f:
-        config = toml.loads(f.read())
+    config = _open_config(path)
     # split up config into differenent dictionaries
     structure = config["structure"]
     addresses = config["addresses"]
@@ -105,6 +70,22 @@ def load_config(path: str):
         labels[addresses[addr]["label"]] = addr_dict
 
     return addresses, labels
+
+
+# q_table_index will return a dictionary of the changing states of the game as
+# well as the
+def q_table_index(path: str) -> (dict, dict):
+    # load config, q types, and the memory address data
+    config = _open_config(path)
+    return config["q_types"], config["rewards"]
+
+
+def _open_config(path: str) -> dict:
+    # load config
+    config = None
+    with open(path, "r") as f:
+        config = toml.loads(f.read())
+    return config
 
 
 def test():

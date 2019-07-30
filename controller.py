@@ -13,6 +13,7 @@ Dolphin 5.0-10715
 from dataclasses import dataclass
 from dataclasses import fields
 import math
+import numpy as np
 import os
 import sys
 import configparser
@@ -59,7 +60,6 @@ class Stick:
     x: float = STICK_NEUTRAL
     y: float = STICK_NEUTRAL
     name: str = ""
-    last_direction: float = 0.0
 
 
 @dataclass
@@ -73,19 +73,19 @@ class Controller:
     buttons_a: Button = Button(name="A")
     buttons_b: Button = Button(name="B")
     buttons_x: Button = Button(name="X")
-    buttons_y: Button = Button(name="Y")
+    # buttons_y: Button = Button(name="Y")
     buttons_z: Button = Button(name="Z")
-    buttons_start: Button = Button(name="START")
-    main_stick: Stick = Stick(name="MAIN")
-    c_stick: Stick = Stick(name="C")
+    # buttons_start: Button = Button(name="START")
+    stick_main: Stick = Stick(name="MAIN")
+    stick_c: Stick = Stick(name="C")
     # my bot won't disrespect
     # d_pad_up: Button = Button(name="D_UP")
     # d_pad_down: Button = Button(name="D_DOWN")
     # d_pad_left: Button = Button(name="D_LEFT")
     # d_pad_right: Button = Button(name="D_RIGHT")
-    triggers_l: Button = Button(name="L")
-    triggers_r: Button = Button(name="R")
-    analog_l: Analog = Analog(name="L")
+    # triggers_l: Button = Button(name="L")
+    # triggers_r: Button = Button(name="R")
+    # analog_l: Analog = Analog(name="L")
     analog_r: Analog = Analog(name="R")
 
 
@@ -150,12 +150,37 @@ def _reset_controller(controller: Controller, pipe: int, echo=False):
         if field.type == type(Button()):
             _send_button_command(BUTTON_RELEASE, controller_attr, pipe, echo=echo)
             continue
-        if field.type == type(Analog()):
-            set_analog_value(controller_attr, 0.0)
-            _send_analog_command(controller_attr, pipe, echo=echo)
+        if field.type == type(Stick()):
             continue
-        _set_stick_xy(controller_attr, STICK_NEUTRAL, STICK_NEUTRAL)
-        _send_stick_command(controller_attr, pipe, echo=echo)
+            _set_stick_xy(controller_attr, STICK_NEUTRAL, STICK_NEUTRAL)
+            _send_stick_command(controller_attr, pipe, echo=echo)
+        set_analog_value(controller_attr, 0.0)
+        _send_analog_command(controller_attr, pipe, echo=echo)
+
+
+"""
+THIS FUNCTION IS V BAD PLS FIX LATER
+"""
+# TODO: make this much more readable between files this code is so shit at this
+# point [ A, B, X, R, MAIN_DIRECTION, MAIN_DISTANCE, C_DIRECTION, C_DISTANCE ]
+def do_controller_actions(
+    controller: Controller, actions: np.array, pipe: int, echo=False
+):
+    if len(np.array != 8):
+        return
+    # actions A,B,X
+    controller.buttons_a.pressed = np.array[0]
+    _update_dolphin_button(controller.buttons_a, echo=echo)
+    controller.buttons_a.pressed = np.array[1]
+    _update_dolphin_button(controller.buttons_a, echo=echo)
+    controller.buttons_a.pressed = np.array[2]
+    _update_dolphin_button(controller.buttons_a, echo=echo)
+    # analog R shoulder
+    set_analog_value(controller.analog_r, np.array[3])
+    _send_analog_command(controller.analog_r, pipe, echo=echo)
+    # sticks MAIN and C
+    move_stick(controller.stick_main, pipe, np.array[4], np.array[5], echo=echo)
+    move_stick(controller.stick_c, pipe, np.array[6], np.array[7], echo=echo)
 
 
 def main():
@@ -202,6 +227,25 @@ def push_button(button: Button, duration: float, pipe: int, echo=False):
     button.pressed = 0
 
 
+def press_button(button: Button, pipe: int, echo=False):
+    _send_button_command(BUTTON_PRESS, button, pipe, echo=echo)
+    button.pressed = 1
+
+
+def release_button(button: Button, pipe: int, echo=False):
+    _send_button_command(BUTTON_RELEASE, button, pipe, echo=echo)
+    button.pressed = 0
+
+
+# _update_dolphin_button will take the current button state and determine what
+# action to take either press or release the dolphin controller
+def _update_dolphin_button(button: Button, pipe: int, echo=False):
+    if button.pressed:
+        _send_button_command(BUTTON_PRESS, button, pipe, echo=echo)
+        return
+    _send_button_command(BUTTON_RELEASE, button, pipe, echo=echo)
+
+
 # _send_button_command will send the desired button "PRESS/RELEASE BUTTON ?" to
 # the specified pipe and will echo the output if echo is set to true
 def _send_button_command(cmd: str, button: Button, pipe: int, echo=False):
@@ -239,7 +283,6 @@ def _set_stick_xy(stick: Stick, x: float, y: float):
 # step can only be 0.043 the STICK_ITERATION_LENGTH units per frame since the
 # radius of the control stick is .5 long
 def move_stick(stick: Stick, pipe: int, direction: float, distance: float, echo=False):
-    stick.last_direction = direction
     if direction < 0 or 360 < direction:
         os.write(2, b"direction must be between [0.0, 360.0): %f" % direction)
         return
