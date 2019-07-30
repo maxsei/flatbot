@@ -15,9 +15,10 @@ from dataclasses import fields
 import math
 import numpy as np
 import os
-import sys
 import configparser
 import re
+import random
+import sys
 import time
 
 
@@ -163,24 +164,28 @@ THIS FUNCTION IS V BAD PLS FIX LATER
 """
 # TODO: make this much more readable between files this code is so shit at this
 # point [ A, B, X, R, MAIN_DIRECTION, MAIN_DISTANCE, C_DIRECTION, C_DISTANCE ]
+# controller actions will come in as floats from 0,1
 def do_controller_actions(
     controller: Controller, actions: np.array, pipe: int, echo=False
 ):
     if len(np.array != 8):
         return
+    # decide will generate a one if the random number(between 0 and 1) generated
+    # is greater than the value passed in
+    decide = lambda x: 1 if x > random.uniform(0, 1) else 1
     # actions A,B,X
-    controller.buttons_a.pressed = np.array[0]
+    controller.buttons_a.pressed = decide(np.array[0])
     _update_dolphin_button(controller.buttons_a, echo=echo)
-    controller.buttons_a.pressed = np.array[1]
+    controller.buttons_a.pressed = decide(np.array[1])
     _update_dolphin_button(controller.buttons_a, echo=echo)
-    controller.buttons_a.pressed = np.array[2]
+    controller.buttons_a.pressed = decide(np.array[2])
     _update_dolphin_button(controller.buttons_a, echo=echo)
     # analog R shoulder
     set_analog_value(controller.analog_r, np.array[3])
     _send_analog_command(controller.analog_r, pipe, echo=echo)
     # sticks MAIN and C
-    move_stick(controller.stick_main, pipe, np.array[4], np.array[5], echo=echo)
-    move_stick(controller.stick_c, pipe, np.array[6], np.array[7], echo=echo)
+    move_stick(controller.stick_main, pipe, np.array[4] * 360, np.array[5], echo=echo)
+    move_stick(controller.stick_c, pipe, np.array[6] * 360, np.array[7], echo=echo)
 
 
 def main():

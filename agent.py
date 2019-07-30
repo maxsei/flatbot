@@ -56,8 +56,9 @@ def main() -> int:
     env_min = np.zeros(len(dynamic_labels))
     env_max = np.ones(len(dynamic_labels))
     actions = np.zeros(shape=8)
-    discrete_delta = np.array([100] * len(env_max))
+    discrete_delta = None
     discrete_state = None
+    discrete_size = np.array([100] * len(dynamic_labels))
 
     learning_rate = 0.1
     discount_factor = 0.95
@@ -103,8 +104,8 @@ def main() -> int:
                 discrete_state = get_discrete_state(
                     np.array([*dynamic_labels.values()]), env_min, discrete_delta
                 )
-                print(env_min)
-                print(env_max)
+                discrete_delta = (env_max - env_min) / discrete_size
+                print("discrete_delta: ", discrete_delta)
             # if there is not an update we don't care about these next few things
             if not update:
                 continue
@@ -127,13 +128,12 @@ def main() -> int:
     return 0
 
 
-def get_discrete_state(state: np.array, env_low: np.array, delta: np.array) -> np.array:
-    try:
-        discrete_state = (state - env_low) / delta
-        return tuple(discrete_state.astype(np.int))
-    except:
-        print(state)
-        print(env_low)
+# get_discrete_state given the current state, environment minimum, and the delta
+# step size of your space will return the state as a discrete value in the state
+# space
+def get_discrete_state(state: np.array, env_min: np.array, delta: np.array) -> np.array:
+    discrete_state = (state - env_min) / delta
+    return tuple(discrete_state.astype(np.int))
 
 
 def bellman():
