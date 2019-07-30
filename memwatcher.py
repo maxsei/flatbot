@@ -17,7 +17,7 @@ DEBUG_LABELS = {
     # "stage.blastzone_top", # check
     # "stage.blastzone_right", # check
     # "stage.blastzone_left", # check
-    "match.frame_count",  # check
+    # "match.frame_count",  # check
     # "match.finished", # check
     # "p2.entity.sheild_size",
     # "p2.body_state", # bust

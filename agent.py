@@ -10,7 +10,7 @@ import memwatcher
 import numpy as np
 
 
-def main()->int:
+def main() -> int:
     # load the memory configuration
     mem_path = memconf.SSBM_CONFIG_FILENAME
     address_index, label_index = memconf.load_config(mem_path)
@@ -64,10 +64,14 @@ def main()->int:
     mutation_chance = 0.5
 
     done = False
-    init_counter = 0
     while not done:
         try:
+            # init counter will try and count up to the length of the static
+            # labels to check and see if all of them update within a single data
+            # message
+            init_counter = 0
             update = False
+            # get the message and check what is in it
             data = memwatcher.get_dolphin_data(address_index, label_index, socket_fd)
             for addr in data:
                 hex_value = data[addr]
@@ -82,8 +86,8 @@ def main()->int:
                 else:
                     static_labels[label] = hex_value
                     init_counter += 1
-
-            if update and not init_counter % len(static_labels) and init_counter > 0:
+            # check for initialization of save state
+            if init_counter == len(static_labels):
                 game_history = game_history.drop(game_history.index)
                 # create q table by adding the initialized values
                 for i, q_type in enumerate(q_index):
@@ -101,13 +105,13 @@ def main()->int:
                 )
                 print(env_min)
                 print(env_max)
-                return 0
-
+            # if there is not an update we don't care about these next few things
+            if not update:
+                continue
             # do q learning stuff here
-            if update:
-                # add to game history reveal current state to agent
-                game_history.loc[len(game_history)] = list(dynamic_labels.values())
 
+            # add to game history
+            game_history.loc[len(game_history)] = list(dynamic_labels.values())
 
         except KeyboardInterrupt:
             break
