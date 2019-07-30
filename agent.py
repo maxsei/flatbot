@@ -14,7 +14,6 @@ def main() -> int:
     # load the memory configuration
     mem_path = memconf.SSBM_CONFIG_FILENAME
     address_index, label_index = memconf.load_config(mem_path)
-    q_index, reward_index = memconf.q_table_index(mem_path)
     # set the pysical memory locations to watch
     mem_locations_path = memwatcher.MEMWATCH_DIR + memwatcher.MEMORY_LOCATIONS_NAME
     memwatcher.watch_memory_locations(
@@ -48,17 +47,15 @@ def main() -> int:
     game_history = pd.DataFrame(columns=list(dynamic_labels.keys()))
 
     # Q learnin'
+    q_index, reward_index = memconf.q_table_index(mem_path)
     q_table = np.random.random((len(dynamic_labels), len(controller_state)))
-
-    # print(q_table)
-    # return
     q_table = None  # see init below
     env_min = np.zeros(len(dynamic_labels))
     env_max = np.ones(len(dynamic_labels))
-    actions = np.zeros(shape=8)
-    discrete_delta = None
+    action_space = np.random.uniform(size=8)
     discrete_state = None
-    discrete_size = np.array([100] * len(dynamic_labels))
+    discrete_size = None
+    discrete_delta = np.zeros(len(dynamic_labels))
 
     learning_rate = 0.1
     discount_factor = 0.95
@@ -91,25 +88,34 @@ def main() -> int:
             if init_counter == len(static_labels):
                 game_history = game_history.drop(game_history.index)
                 # create q table by adding the initialized values
-                for i, q_type in enumerate(q_index):
-                    q_range = q_index[q_type]
-                    # if the q range is predefined use this
-                    if type(q_range["min"]) != str:
-                        env_min[i] = q_range["min"]
-                        env_max[i] = q_range["max"]
+                for i, label in enumerate(dynamic_labels):
+                    if label not in label_index:
                         continue
-                    # otherwise the q_type is in a static variable
-                    env_min[i] = static_labels[q_range["min"]]
-                    env_max[i] = static_labels[q_range["max"]]
-                discrete_state = get_discrete_state(
-                    np.array([*dynamic_labels.values()]), env_min, discrete_delta
-                )
-                discrete_delta = (env_max - env_min) / discrete_size
-                print("discrete_delta: ", discrete_delta)
+                    if "q_type" in label_index[label]:
+                        q_type = label_index[label]["q_type"]
+                        discrete_delta[i] = q_index[q_type]["delta"]
+                        if type(q_index[q_type]["min"]) != str:
+                            env_min[i] = q_index[q_type]["min"]
+                            env_max[i] = q_index[q_type]["max"]
+                            continue
+                        env_min[i] = static_labels[q_index[q_type]["min"]]
+                        env_max[i] = static_labels[q_index[q_type]["max"]]
+
+                print("discrete_delta:", discrete_delta)
+                print("env_max:", env_max)
+                print("env_min:", env_min)
+                # discrete_delta = (env_max - env_min) / discrete_size
+                # discrete_state = get_discrete_state(
+                #     np.array([*dynamic_labels.values()]), env_min, discrete_delta
+                # )
+                # print("discrete_state: ", discrete_state)
+                # print("discrete_delta: ", discrete_delta)
             # if there is not an update we don't care about these next few things
             if not update:
                 continue
             # do q learning stuff here
+            # q_table = np.random.uniform(size=(discrete_size + [len(action_space)]))
+            # print(q_table.size)
 
             # add to game history
             game_history.loc[len(game_history)] = list(dynamic_labels.values())

@@ -90,6 +90,16 @@ class Controller:
     analog_r: Analog = Analog(name="R")
 
 
+# action state
+ACTION_A = 0
+ACTION_B = 1
+ACTION_X = 2
+ACTION_ANALOG_R = 3
+ACTION_STICK_MAIN_DIRECTION = 4
+ACTION_STICK_MAIN_DISTANCE = 5
+ACTION_STICK_C_DIRECTION = 6
+ACTION_STICK_C_DISTANCE = 7
+
 # controller_dict returns a dictionary of the controllers current state
 def controller_state(controller: Controller) -> dict:
     result = {}
@@ -174,18 +184,30 @@ def do_controller_actions(
     # is greater than the value passed in
     decide = lambda x: 1 if x > random.uniform(0, 1) else 1
     # actions A,B,X
-    controller.buttons_a.pressed = decide(np.array[0])
+    controller.buttons_a.pressed = decide(np.array[ACTION_A])
     _update_dolphin_button(controller.buttons_a, echo=echo)
-    controller.buttons_a.pressed = decide(np.array[1])
+    controller.buttons_b.pressed = decide(np.array[ACTION_B])
     _update_dolphin_button(controller.buttons_a, echo=echo)
-    controller.buttons_a.pressed = decide(np.array[2])
+    controller.buttons_x.pressed = decide(np.array[ACTION_X])
     _update_dolphin_button(controller.buttons_a, echo=echo)
     # analog R shoulder
-    set_analog_value(controller.analog_r, np.array[3])
+    set_analog_value(controller.analog_r, np.array[ACTION_ANALOG_R])
     _send_analog_command(controller.analog_r, pipe, echo=echo)
     # sticks MAIN and C
-    move_stick(controller.stick_main, pipe, np.array[4] * 360, np.array[5], echo=echo)
-    move_stick(controller.stick_c, pipe, np.array[6] * 360, np.array[7], echo=echo)
+    move_stick(
+        controller.stick_main,
+        pipe,
+        np.array[ACTION_STICK_MAIN_DIRECTION] * 360,
+        np.array[ACTION_STICK_MAIN_DISTANCE],
+        echo=echo,
+    )
+    move_stick(
+        controller.stick_main,
+        pipe,
+        np.array[ACTION_STICK_C_DIRECTION] * 360,
+        np.array[ACTION_STICK_C_DISTANCE],
+        echo=echo,
+    )
 
 
 def main():

@@ -57,9 +57,9 @@ p1.falls=1.0
 p2.falls=-1.0
 
 [q_types]
-x = { min = "stage.blastzone_left", max = "stage.blastzone_right" }
-y = { min = "stage.blastzone_bottom", max = "stage.blastzone_top" }
-percentage = { min = 0, max = 300 } # could be 999 but 300 is more realistic
+x = { min = "stage.blastzone_left", max = "stage.blastzone_right", delta = 1 }
+y = { min = "stage.blastzone_bottom", max = "stage.blastzone_top", delta = 1 }
+percentage = { min = 0, max = 300, delta = 1 } # could be 999 but 300 is more realistic
 
 [addresses]
 
