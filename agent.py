@@ -30,25 +30,29 @@ def main() -> int:
     # controller_state = controller.controller_state(agent_controller)
     actions = controller.ControllerActions()
 
-    # seperate static from volitile values in the game
-    static_labels, dynamic_labels = {}, {}
+    # seperate static from volitile values in the game dynamic state is a
+    # convenience for adding history to the game_history data frame below
+    static_labels, volitile_labels, dynamic_state = {}, {}, {}
     for addr in address_index:
         label = address_index[addr]["label"]
-        value = address_index[addr]["value"]
+        value = None
+        if type(address_index[addr]["value"]) == dict:
+            value = address_index[addr]["value"].copy()
+        else:
+            value = address_index[addr]["value"]
         try:
             if address_index[addr]["mod"] == "static":
                 static_labels[label] = value
                 continue
+            elif address_index[addr]["mod"] == "volitile":
+                volitile_labels[label] = value
         except:
             pass
-        dynamic_labels[label] = value
+        dynamic_state[label] = value
     # add controller state to the dynamic state
-    # dynamic_labels.update(controller_state)
-    dynamic_labels.update(controller.actions_state(actions))
-    dynamic_labels.update({"match.frame_count": 0})
-
+    dynamic_state.update(controller.actions_state(actions))
     # instantiate current states and game states dataframe
-    game_history = pd.DataFrame(columns=list(dynamic_labels.keys()))
+    game_history = pd.DataFrame(columns=list(volitile_labels.keys()))
 
     discount_factor = 0.1
     time_steps_information = 180
@@ -92,8 +96,10 @@ def main() -> int:
                     save_episode(start_date, p2_falls, game_history, echo=True)
                     game_history = game_history.drop(game_history.index)
                 # seperate static from dynamic data
-                if label in dynamic_labels:
-                    dynamic_labels[label] = hex_value
+                if label in volitile_labels:
+                    volitile_labels[label] = hex_value
+                elif label in dynamic_state:
+                    dynamic_state[label] = hex_value
                 else:
                     static_labels[label] = hex_value
                     init_counter += 1
@@ -132,8 +138,8 @@ def main() -> int:
                     agent_controller, actions, dolphin_pipe
                 )
             # controller_state = controller.controller_state(agent_controller)
-            dynamic_labels.update(controller.actions_state(actions))
-            game_history.loc[len(game_history)] = list(dynamic_labels.values())
+            volitile_labels.update(controller.actions_state(actions))
+            game_history.loc[len(game_history)] = list(dynamic_state.values())
 
         except KeyboardInterrupt:
             break

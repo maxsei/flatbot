@@ -124,7 +124,7 @@ percentage = { min = 0, max = 200, delta = 5, type = "uint8" } # could be 999 bu
 	# 0008 = { label = "winner_player_id", value = 0 , type = "string" } 
 	# 000D = { label = "player_last_died", value = 0x06 , type = "short" }
 	# 00=ingame, 01=match finished (I think.) - Achilles1515
-	0024 = { label = "frame_count", value = 0 , type = "int", mod = "volitile" }
+	0024 = { label = "frame_count", value = 0 , type = "int" }
 	# 0028 = { label = "seconds_left", value = "" , type = "int" }
 	# 0x002C = { label = "subseconds", value = 0 , type = "" }
 	# 00=ingame, 01=match finished - Achilles1515
