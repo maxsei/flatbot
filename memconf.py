@@ -14,6 +14,7 @@ SSBM_CONFIG_FILENAME = "ssbm-memory-config.toml"
 def _offset_addr(addr: str, offset: str):
     return "%x" % (int(addr, base=16) + int(offset, base=16))
 
+
 # _get_offsets will recursively get the offsets of a a peice of data in the config
 # by doing "pointer arithmetic" unitil it reaches data without any further
 # pointers

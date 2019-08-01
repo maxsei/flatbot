@@ -28,6 +28,7 @@ def main() -> int:
     # set up controller
     agent_controller = controller.Controller()
     controller_state = controller.controller_state(agent_controller)
+    actions = controller.ControllerActions()
 
     # seperate static from volitile values in the game
     static_labels, dynamic_labels = {}, {}
@@ -42,32 +43,35 @@ def main() -> int:
             pass
         dynamic_labels[label] = value
     # add controller state to the dynamic state
-    dynamic_labels.update(controller_state)
+    # dynamic_labels.update(controller_state)
+    dynamic_labels.update(controller.actions_names(actions))
+    dynamic_labels.update({"match.frame_count": 0})
+
     # instantiate current states and game states dataframe
     game_history = pd.DataFrame(columns=list(dynamic_labels.keys()))
 
-    # Q learnin'
-    q_index, reward_index = memconf.q_table_index(mem_path)
-    q_table = np.random.random((len(dynamic_labels), len(controller_state)))
-    q_table = None  # see init below
-    env_min = np.zeros(len(dynamic_labels))
-    env_max = np.ones(len(dynamic_labels))
-    action_space = np.random.uniform(size=8)
-    discrete_state = None
-    discrete_size = None
-    discrete_delta = np.zeros(len(dynamic_labels))
+    discount_factor = 0.1
+    time_steps_information = 180
+    prediction_lag = 15
 
-    learning_rate = 0.1
-    discount_factor = 0.95
-    mutation_chance = 0.5
+    q_index, _ = memconf.q_table_index(memconf.SSBM_CONFIG_FILENAME)
+    q_table = None
+    env_max = []
+    env_min = []
+    discrete_size = []
+    discrete_delta = []
+    discrete_state = None
 
     done = False
+    reward = 0
+    p2_falls = 0
+    start_date = dt.datetime.now()
+    init_counter = 0
     while not done:
         try:
             # init counter will try and count up to the length of the static
             # labels to check and see if all of them update within a single data
             # message
-            init_counter = 0
             update = False
             # get the message and check what is in it
             data = memwatcher.get_dolphin_data(address_index, label_index, socket_fd)
@@ -78,46 +82,56 @@ def main() -> int:
                 label = address_index[addr]["label"]
                 if label == "match.frame_count" and hex_value > 0:
                     update = True
-                # we haven't initalized yet so seperate static from dynamic data
+                if label == "p1.falls":
+                    reward += 1
+                if label == "p2.falls":
+                    p2_falls += 1
+                    reward = 0
+                    # compute the average reward per action for each episode
+                    game_history["p1.falls"] = game_history["p1.falls"] - reward
+                    save_episode(start_date, p2_falls, game_history, echo=True)
+                    game_history = game_history.drop(game_history.index)
+                # seperate static from dynamic data
                 if label in dynamic_labels:
                     dynamic_labels[label] = hex_value
                 else:
                     static_labels[label] = hex_value
                     init_counter += 1
-            # check for initialization of save state
-            if init_counter == len(static_labels):
-                game_history = game_history.drop(game_history.index)
-                # create q table by adding the initialized values
-                for i, label in enumerate(dynamic_labels):
-                    if label not in label_index:
-                        continue
-                    if "q_type" in label_index[label]:
-                        q_type = label_index[label]["q_type"]
-                        discrete_delta[i] = q_index[q_type]["delta"]
-                        if type(q_index[q_type]["min"]) != str:
-                            env_min[i] = q_index[q_type]["min"]
-                            env_max[i] = q_index[q_type]["max"]
-                            continue
-                        env_min[i] = static_labels[q_index[q_type]["min"]]
-                        env_max[i] = static_labels[q_index[q_type]["max"]]
-
-                print("discrete_delta:", discrete_delta)
-                print("env_max:", env_max)
-                print("env_min:", env_min)
-                # discrete_delta = (env_max - env_min) / discrete_size
-                # discrete_state = get_discrete_state(
-                #     np.array([*dynamic_labels.values()]), env_min, discrete_delta
-                # )
-                # print("discrete_state: ", discrete_state)
-                # print("discrete_delta: ", discrete_delta)
-            # if there is not an update we don't care about these next few things
             if not update:
                 continue
-            # do q learning stuff here
-            # q_table = np.random.uniform(size=(discrete_size + [len(action_space)]))
-            # print(q_table.size)
-
-            # add to game history
+            if init_counter % len(static_labels) == 0 and init_counter != 0:
+                init_counter = 0
+                # initialize q learning parameters
+                for label in label_index:
+                    if not "q_type" in label_index[label]:
+                        continue
+                    q_info = q_index[label_index[label]["q_type"]]
+                    if type(q_info["max"]) == str:
+                        env_min.append(static_labels[q_info["min"]])
+                        env_max.append(static_labels[q_info["max"]])
+                    else:
+                        env_min.append(q_info["min"])
+                        env_max.append(q_info["max"])
+                    discrete_delta.append(q_info["delta"])
+                # initialize q learing environment
+                env_min = np.array(env_min, np.int8)
+                env_max = np.array(env_max, np.int8)
+                discrete_delta = np.array(discrete_delta, np.int8)
+                discrete_size = abs(env_max - env_min) // discrete_delta
+                q_table = np.random.uniform(
+                    size=(discrete_size + len(controller.actions_names(actions)))
+                ).astype(np.float16)
+            # create q table of discrete states
+            if len(game_history) % 10 == 0:
+                # TODO: make prediction of action
+                # do action
+                for name in controller.actions_names(actions):
+                    controller._set_action(actions, name, np.random.uniform())
+                controller.do_controller_actions(
+                    agent_controller, actions, dolphin_pipe
+                )
+            controller_state = controller.controller_state(agent_controller)
+            dynamic_labels.update(controller.actions_names(actions))
             game_history.loc[len(game_history)] = list(dynamic_labels.values())
 
         except KeyboardInterrupt:
@@ -139,7 +153,19 @@ def main() -> int:
 # space
 def get_discrete_state(state: np.array, env_min: np.array, delta: np.array) -> np.array:
     discrete_state = (state - env_min) / delta
-    return tuple(discrete_state.astype(np.int))
+    return tuple(discrete_state.astype(np.int16))
+
+
+def save_episode(date: dt.datetime, episode: int, df: pd.DataFrame, echo=False):
+    datestr = str(date).replace(" ", ".")
+    try:
+        os.mkdir("episodes/%s" % datestr)
+    except:
+        pass
+    path = "episodes/%s/%03d.csv" % (datestr, episode)
+    if echo:
+        print(path)
+    df.to_csv(path)
 
 
 def bellman():

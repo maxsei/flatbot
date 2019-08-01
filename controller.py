@@ -91,14 +91,86 @@ class Controller:
 
 
 # action state
-ACTION_A = 0
-ACTION_B = 1
-ACTION_X = 2
-ACTION_ANALOG_R = 3
-ACTION_STICK_MAIN_DIRECTION = 4
-ACTION_STICK_MAIN_DISTANCE = 5
-ACTION_STICK_C_DIRECTION = 6
-ACTION_STICK_C_DISTANCE = 7
+@dataclass
+class ControllerActions:
+    action_a: float = 0.0
+    action_b: float = 0.0
+    action_x: float = 0.0
+    action_z: float = 0.0
+    action_analog_r: float = 0.0
+    action_stick_main_direction: float = 0.0
+    action_stick_main_distance: float = 0.0
+    action_stick_c_direction: float = 0.0
+    action_stick_c_distance: float = 0.0
+
+
+def action_values(ca: ControllerActions) -> np.array:
+    result = []
+    for field in fields(ca):
+        result.append(field.value)
+    return np.array(result)
+
+# actions_names will return a dictionary of the controller actions
+def actions_names(ca: ControllerActions) -> list:
+    result = {}
+    for field in fields(ca):
+        result[field.name] = getattr(ca, field.name)
+    return result
+
+
+# set_action will set the action of a given name to that value
+def _set_action(ca: ControllerActions, name: str, value: float):
+    if abs(value) > 1:
+        return
+    setattr(ca, name, value)
+
+
+# set_action will set the action of a given name to that value
+def set_actions(ca: ControllerActions, actions_dict: dict):
+    for action in actions_dict:
+        value = actions_dict[action]
+        _set_action(ca, action, value)
+
+
+# TODO: make this function better i.e. couple it with the controller class
+# point [ A, B, X, R, MAIN_DIRECTION, MAIN_DISTANCE, C_DIRECTION, C_DISTANCE ]
+# controller actions will come in as floats from 0,1
+def do_controller_actions(
+    controller: Controller, actions: ControllerActions, pipe: int, echo=False
+):
+    if type(actions) != ControllerActions:
+        return
+    # decide will generate a one if the random number(between 0 and 1) generated
+    # is greater than the value passed in
+    decide = lambda x: 1 if x > random.uniform(0, 1) else 0
+    # actions A,B,X
+    controller.buttons_a.pressed = decide(actions.action_a)
+    _update_dolphin_button(controller.buttons_a, pipe, echo=echo)
+    controller.buttons_b.pressed = decide(actions.action_b)
+    _update_dolphin_button(controller.buttons_b, pipe, echo=echo)
+    controller.buttons_x.pressed = decide(actions.action_x)
+    _update_dolphin_button(controller.buttons_x, pipe, echo=echo)
+    controller.buttons_z.pressed = decide(actions.action_z)
+    _update_dolphin_button(controller.buttons_z, pipe, echo=echo)
+    # analog R shoulder
+    set_analog_value(controller.analog_r, actions.action_analog_r)
+    _send_analog_command(controller.analog_r, pipe, echo=echo)
+    # sticks MAIN and C
+    move_stick(
+        controller.stick_main,
+        pipe,
+        actions.action_stick_main_direction * 360,
+        actions.action_stick_main_distance,
+        echo=echo,
+    )
+    move_stick(
+        controller.stick_c,
+        pipe,
+        actions.action_stick_c_direction * 360,
+        actions.action_stick_c_distance,
+        echo=echo,
+    )
+
 
 # controller_dict returns a dictionary of the controllers current state
 def controller_state(controller: Controller) -> dict:
@@ -169,47 +241,6 @@ def _reset_controller(controller: Controller, pipe: int, echo=False):
         _send_analog_command(controller_attr, pipe, echo=echo)
 
 
-"""
-THIS FUNCTION IS V BAD PLS FIX LATER
-"""
-# TODO: make this much more readable between files this code is so shit at this
-# point [ A, B, X, R, MAIN_DIRECTION, MAIN_DISTANCE, C_DIRECTION, C_DISTANCE ]
-# controller actions will come in as floats from 0,1
-def do_controller_actions(
-    controller: Controller, actions: np.array, pipe: int, echo=False
-):
-    if len(np.array != 8):
-        return
-    # decide will generate a one if the random number(between 0 and 1) generated
-    # is greater than the value passed in
-    decide = lambda x: 1 if x > random.uniform(0, 1) else 1
-    # actions A,B,X
-    controller.buttons_a.pressed = decide(np.array[ACTION_A])
-    _update_dolphin_button(controller.buttons_a, echo=echo)
-    controller.buttons_b.pressed = decide(np.array[ACTION_B])
-    _update_dolphin_button(controller.buttons_a, echo=echo)
-    controller.buttons_x.pressed = decide(np.array[ACTION_X])
-    _update_dolphin_button(controller.buttons_a, echo=echo)
-    # analog R shoulder
-    set_analog_value(controller.analog_r, np.array[ACTION_ANALOG_R])
-    _send_analog_command(controller.analog_r, pipe, echo=echo)
-    # sticks MAIN and C
-    move_stick(
-        controller.stick_main,
-        pipe,
-        np.array[ACTION_STICK_MAIN_DIRECTION] * 360,
-        np.array[ACTION_STICK_MAIN_DISTANCE],
-        echo=echo,
-    )
-    move_stick(
-        controller.stick_main,
-        pipe,
-        np.array[ACTION_STICK_C_DIRECTION] * 360,
-        np.array[ACTION_STICK_C_DISTANCE],
-        echo=echo,
-    )
-
-
 def main():
     # TODO: take in custom configuration of a controller could affect dolphin
     # controller reset function
@@ -225,7 +256,7 @@ def main():
     #     time.sleep(1)
 
     _reset_controller(controller, dolphin_pipe, echo=True)
-    callibrate_controller(controller, dolphin_pipe, 1.5, echo=True)
+    callibrate_controller(controller, dolphin_pipe, 0.0, echo=True)
     # close the pipe pointer
     os.close(dolphin_pipe)
 

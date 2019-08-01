@@ -1,0 +1,17 @@
+[ 89, 61, 40,  89, 61, 40, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 9 ]
+p1.x			float16
+p1.y			float16
+p1.percentage	uint8
+p2.x			float16
+p2.y			float16
+p2.percentage	uint8
+
+ACTION_A = 0
+ACTION_B = 1
+ACTION_X = 2
+ACTION_Z = 3
+ACTION_ANALOG_R = 4
+ACTION_STICK_MAIN_DIRECTION = 5
+ACTION_STICK_MAIN_DISTANCE = 6
+ACTION_STICK_C_DIRECTION = 7
+ACTION_STICK_C_DISTANCE = 8

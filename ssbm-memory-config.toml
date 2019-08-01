@@ -53,13 +53,15 @@ q_type = "attack"
 # it depends on i.e. q_type = "x" depends on x.  There are some value that are
 # hard coded for the game such as percentage ranging from 0-999
 [rewards]
-p1.falls=1.0
-p2.falls=-1.0
+p1.falls = 1.0
+p2.falls = -1.0
 
 [q_types]
-x = { min = "stage.blastzone_left", max = "stage.blastzone_right", delta = 1 }
-y = { min = "stage.blastzone_bottom", max = "stage.blastzone_top", delta = 1 }
-percentage = { min = 0, max = 300, delta = 1 } # could be 999 but 300 is more realistic
+x = { min = "stage.blastzone_left", max = "stage.blastzone_right", delta = 5, type = "float16" }
+y = { min = "stage.blastzone_bottom", max = "stage.blastzone_top", delta = 5, type = "float16" }
+percentage = { min = 0, max = 200, delta = 5, type = "uint8" } # could be 999 but 150 is more realistic
+# buttons = { min = 0, max = 1, delta = 1, type = "uint8" }
+# sticks = { min = 0, max = 1, delta = 0.125, type = "uint8" }
 
 [addresses]
 
@@ -97,21 +99,26 @@ percentage = { min = 0, max = 300, delta = 1 } # could be 999 but 300 is more re
 	[offsets.player]
 	10 = { label = "x", value = 0.0 , type = "float", q_type = "x", mod = "volitile" }
 	14 = { label = "y", value = 0.0 , type = "float", q_type = "y", mod = "volitile" }
+	# 48 = { label = "id", value = 0.0 , type = "short", mod = "volitile" }
 	# 30 = { label = "direction", value = 0 , type = "float", mod = "volitile" }
 	# Facing direction	Float. 1 is right, -1 is left
 	# 40 = { label = "facing_direction", value = 0.0 , type = "float", mod = "volitile" }
 	60 = { label = "percentage", value = 0 , type = "short", q_type = "percentage", mod = "volitile" }
 	# generic entity pointer
-	B0 = "entity"
 	68 = { label = "falls", value = 0 , type = "int", mod = "volitile" }
+	# 8C = { label = "SDs", value = 0 , type = "short", mod = "volitile" }
+	# 54 = { label = "attack_ratio", value = 0.0 , type = "float", mod = "volitile" }
+	# 58 = { label = "defense_ratio", value = 0.0 , type = "float", mod = "volitile" }
+	# B0 = "entity"
 	# 8E = { label = "stocks", value = 0 , type = "int", mod = "volitile" }
+	# 0x660	Digital Button Data
 
+	# 0 is on ground 1 is in air
 	# 0 = normal, 1 = invulnerable, 2 = intangible
 	# 1988 = { label = "body_state", value = 0 , type = "string", mod = "volitile" }
 
 	[offsets.match]
 	# Set to 01 to initiate "match end" load sequence - Achilles1515
-	# 0000 = { label = "end", value = 0 , type = "string" }
 	# 8016c864, might be player ID that won the match (7 = no contest, 9 = training
 	# mode exit) - Achilles1515
 	# 0008 = { label = "winner_player_id", value = 0 , type = "string" } 
@@ -120,6 +127,7 @@ percentage = { min = 0, max = 300, delta = 1 } # could be 999 but 300 is more re
 	0024 = { label = "frame_count", value = 0 , type = "int", mod = "volitile" }
 	# 0028 = { label = "seconds_left", value = "" , type = "int" }
 	# 0x002C = { label = "subseconds", value = 0 , type = "" }
+	# 00=ingame, 01=match finished - Achilles1515
 
 	[offsets.stage]
 	0074 = { label = "blastzone_left", value = 0.0 , type = "float", mod = "static" }
@@ -127,5 +135,24 @@ percentage = { min = 0, max = 300, delta = 1 } # could be 999 but 300 is more re
 	007C = { label = "blastzone_top", value = 0.0 , type = "float", mod = "static" }
 	0080 = { label = "blastzone_bottom", value = 0.0 , type = "float", mod = "static" }
 
-	[offsets.entity]
-	2C = { label = "facing_direction", value = 0.0 , type = "float" }
+	# [offsets.gobj]
+	
+
+	# [offsets.entity]
+	# 0 = { label = "entity", value = 0.0 , type = "float", mod = "static" }
+	# E90 = "character_data"
+
+	# [offsets.character_data]
+	# 70 = { label = "action_state", value = 0.0 , type = "string", mod = "volitile" }
+	# 140 = { label = "in_air", value = 0.0 , type = "int", mod = "volitile" }
+    # add_data_address('140', 'in_air', intHandler)
+	# 00B0 = { label = "x", value = 0.0 , type = "float", mod = "volitile" }
+	# 0080 = { label = "x_vel", value = 0.0 , type = "float", mod = "volitile" }
+	# E0 = { label = "grounded", value = 0 , type = "int", q_type = "grounded", mod = "volitile" }
+	
+	# [offsets.action_state]
+	# 0014 = { label = "dash", value = 0.0 , type = "short", mod = "volitile" }
+	# 000F	WalkSlow
+	# 0010	WalkMiddle
+	# 0011	WalkFast
+	# 0x1968	Number of jumps used

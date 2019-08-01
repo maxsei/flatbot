@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import socket
+import sys
 import typing
 from struct import unpack
 
@@ -13,26 +14,19 @@ MEMWATCH_DIR = "/home/maximillian/.local/share/dolphin-emu/MemoryWatcher/"
 
 # TODO: debug remove in production
 DEBUG_LABELS = {
-    # "stage.blastzone_bottom", # check
-    # "stage.blastzone_top", # check
-    # "stage.blastzone_right", # check
-    # "stage.blastzone_left", # check
+    # "stage.blastzone_left",
+    # "stage.blastzone_right",
+    # "stage.blastzone_bottom",
+    # "stage.blastzone_top",
     # "match.frame_count",  # check
-    # "match.finished", # check
-    # "p2.entity.sheild_size",
-    # "p2.body_state", # bust
-    # "p1.entity.sheild_size",
-    # "p1.body_state", # bust
     # "p2.falls",
     # "p2.percentage", # check
     # "p2.y", # check
     # "p2.x",  # check
     # "p1.falls", # check
     # "p1.percentage", # check
-    # "p1.facing_direction", # bust
     # "p1.y", # check
     # "p1.x", # check
-    # "p1.entity.body_state",
 }
 
 
@@ -88,7 +82,7 @@ def get_dolphin_data(adr_idx: dict, lbl_idx: dict, sock: int, echo=False) -> dic
             try:
                 dtype = adr_idx[addr]["type"]
             except:
-                print("address %s not in index" % addr, file=2)
+                print("address %s not in index" % addr, file=sys.stderr)
                 continue
             result[addr] = decode_hex_value(hex_value, dtype)
             """

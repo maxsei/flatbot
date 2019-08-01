@@ -1,5 +1,9 @@
 .README.html
 __pycache__/
 dumps/
+episodes/
 scratchpad-achilles.txt
 ssbm-facts.txt
+.ipynb_checkpoints/
+.mypy_cache/
+
