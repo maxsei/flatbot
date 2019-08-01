@@ -27,7 +27,7 @@ def main() -> int:
     dolphin_pipe = controller.dolphin_input_pipe()
     # set up controller
     agent_controller = controller.Controller()
-    controller_state = controller.controller_state(agent_controller)
+    # controller_state = controller.controller_state(agent_controller)
     actions = controller.ControllerActions()
 
     # seperate static from volitile values in the game
@@ -44,7 +44,7 @@ def main() -> int:
         dynamic_labels[label] = value
     # add controller state to the dynamic state
     # dynamic_labels.update(controller_state)
-    dynamic_labels.update(controller.actions_names(actions))
+    dynamic_labels.update(controller.actions_state(actions))
     dynamic_labels.update({"match.frame_count": 0})
 
     # instantiate current states and game states dataframe
@@ -119,19 +119,20 @@ def main() -> int:
                 discrete_delta = np.array(discrete_delta, np.int8)
                 discrete_size = abs(env_max - env_min) // discrete_delta
                 q_table = np.random.uniform(
-                    size=(discrete_size + len(controller.actions_names(actions)))
+                    size=(discrete_size + len(controller.actions_state(actions)))
                 ).astype(np.float16)
+                discrete_state = get_discrete_state(np.array())
             # create q table of discrete states
             if len(game_history) % 10 == 0:
                 # TODO: make prediction of action
                 # do action
-                for name in controller.actions_names(actions):
+                for name in controller.actions_state(actions):
                     controller._set_action(actions, name, np.random.uniform())
                 controller.do_controller_actions(
                     agent_controller, actions, dolphin_pipe
                 )
-            controller_state = controller.controller_state(agent_controller)
-            dynamic_labels.update(controller.actions_names(actions))
+            # controller_state = controller.controller_state(agent_controller)
+            dynamic_labels.update(controller.actions_state(actions))
             game_history.loc[len(game_history)] = list(dynamic_labels.values())
 
         except KeyboardInterrupt:

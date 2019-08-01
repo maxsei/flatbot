@@ -111,7 +111,7 @@ def action_values(ca: ControllerActions) -> np.array:
     return np.array(result)
 
 # actions_names will return a dictionary of the controller actions
-def actions_names(ca: ControllerActions) -> list:
+def actions_state(ca: ControllerActions) -> dict:
     result = {}
     for field in fields(ca):
         result[field.name] = getattr(ca, field.name)
