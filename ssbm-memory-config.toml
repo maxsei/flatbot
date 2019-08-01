@@ -57,9 +57,9 @@ p1.falls = 1.0
 p2.falls = -1.0
 
 [q_types]
-x = { min = "stage.blastzone_left", max = "stage.blastzone_right", delta = 5, type = "float16" }
-y = { min = "stage.blastzone_bottom", max = "stage.blastzone_top", delta = 5, type = "float16" }
-percentage = { min = 0, max = 200, delta = 5, type = "uint8" } # could be 999 but 150 is more realistic
+x = { min = "stage.blastzone_left", max = "stage.blastzone_right", delta = 8, type = "float16" }
+y = { min = "stage.blastzone_bottom", max = "stage.blastzone_top", delta = 8, type = "float16" }
+percentage = { min = 0, max = 160, delta = 15, type = "uint8" } # could be 999 but 150 is more realistic
 # buttons = { min = 0, max = 1, delta = 1, type = "uint8" }
 # sticks = { min = 0, max = 1, delta = 0.125, type = "uint8" }
 
@@ -105,7 +105,7 @@ percentage = { min = 0, max = 200, delta = 5, type = "uint8" } # could be 999 bu
 	# 40 = { label = "facing_direction", value = 0.0 , type = "float", mod = "volitile" }
 	60 = { label = "percentage", value = 0 , type = "short", q_type = "percentage", mod = "volitile" }
 	# generic entity pointer
-	68 = { label = "falls", value = 0 , type = "int", mod = "volitile" }
+	68 = { label = "falls", value = 0 , type = "int" }
 	# 8C = { label = "SDs", value = 0 , type = "short", mod = "volitile" }
 	# 54 = { label = "attack_ratio", value = 0.0 , type = "float", mod = "volitile" }
 	# 58 = { label = "defense_ratio", value = 0.0 , type = "float", mod = "volitile" }

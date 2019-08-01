@@ -8,6 +8,7 @@ import controller
 import memconf
 import memwatcher
 import numpy as np
+from numba import prange
 
 
 def main() -> int:
@@ -28,7 +29,7 @@ def main() -> int:
     # set up controller
     agent_controller = controller.Controller()
     # controller_state = controller.controller_state(agent_controller)
-    actions = controller.ControllerActions()
+    current_actions = controller.ControllerActions()
 
     # seperate static from volitile values in the game dynamic state is a
     # convenience for adding history to the game_history data frame below
@@ -50,9 +51,9 @@ def main() -> int:
             pass
         dynamic_state[label] = value
     # add controller state to the dynamic state
-    dynamic_state.update(controller.actions_state(actions))
+    dynamic_state.update(controller.actions_state(current_actions))
     # instantiate current states and game states dataframe
-    game_history = pd.DataFrame(columns=list(volitile_labels.keys()))
+    game_history = pd.DataFrame(columns=list(dynamic_state.keys()))
 
     discount_factor = 0.1
     time_steps_information = 180
@@ -68,7 +69,7 @@ def main() -> int:
 
     done = False
     reward = 0
-    p2_falls = 0
+    episode = 0
     start_date = dt.datetime.now()
     init_counter = 0
     while not done:
@@ -89,12 +90,14 @@ def main() -> int:
                 if label == "p1.falls":
                     reward += 1
                 if label == "p2.falls":
-                    p2_falls += 1
-                    reward = 0
-                    # compute the average reward per action for each episode
-                    game_history["p1.falls"] = game_history["p1.falls"] - reward
-                    save_episode(start_date, p2_falls, game_history, echo=True)
+                    game_history_copy = game_history.copy()
+                    game_history_copy["reward"] = game_history["p1.falls"] - reward
+                    save_episode(start_date, episode, game_history_copy, echo=True)
+                    # reset game history because we just started a new episode
                     game_history = game_history.drop(game_history.index)
+                    # reset episodic variables
+                    reward = 0
+                    episode += 1
                 # seperate static from dynamic data
                 if label in volitile_labels:
                     volitile_labels[label] = hex_value
@@ -107,6 +110,8 @@ def main() -> int:
                 continue
             if init_counter % len(static_labels) == 0 and init_counter != 0:
                 init_counter = 0
+                # pause the game for allocations
+                toggle_pause(dolphin_pipe)
                 # initialize q learning parameters
                 for label in label_index:
                     if not "q_type" in label_index[label]:
@@ -120,25 +125,52 @@ def main() -> int:
                         env_max.append(q_info["max"])
                     discrete_delta.append(q_info["delta"])
                 # initialize q learing environment
-                env_min = np.array(env_min, np.int8)
-                env_max = np.array(env_max, np.int8)
-                discrete_delta = np.array(discrete_delta, np.int8)
-                discrete_size = abs(env_max - env_min) // discrete_delta
-                q_table = np.random.uniform(
-                    size=(discrete_size + len(controller.actions_state(actions)))
-                ).astype(np.float16)
-                discrete_state = get_discrete_state(np.array())
-            # create q table of discrete states
+                env_min = np.array(env_min)
+                env_max = np.array(env_max)
+                discrete_delta = np.array(discrete_delta)
+                discrete_size = np.array(
+                    (env_max - env_min) / discrete_delta, dtype=int
+                )
+                # print(env_min)
+                # print(env_max)
+                # print(discrete_delta)
+                # print(discrete_size)
+                q_shape = discrete_size + len(controller.actions_state(current_actions))
+                n = np.array(q_shape).prod()
+                q_table = np.empty(n, dtype=np.float16)
+                k = n // 1000
+                for i in prange(0, n - k, k):
+                    q_table[i : i + k] = np.random.uniform(size=k)
+                    # if not i % 10:
+                    #     print(i)
+                q_table = q_table.reshape(q_shape)
+                # unpause the game
+                toggle_pause(dolphin_pipe)
+            if q_table is None:
+                continue
+
+            print("finished allocating q table")
+            # get the discrete state of the game
+            discrete_state = get_discrete_state(
+                np.array(list(volitile_labels.values())),  # need to be np
+                env_min,
+                discrete_delta,
+            )
+            # get max furture q value
+            print(discrete_state)
+            actions = np.argmax(q_table[discrete_state])
+            print(actions)
+            return 0
             if len(game_history) % 10 == 0:
                 # TODO: make prediction of action
                 # do action
-                for name in controller.actions_state(actions):
-                    controller._set_action(actions, name, np.random.uniform())
+                for name in controller.actions_state(current_actions):
+                    controller._set_action(current_actions, name, np.random.uniform())
                 controller.do_controller_actions(
-                    agent_controller, actions, dolphin_pipe
+                    agent_controller, current_actions, dolphin_pipe
                 )
             # controller_state = controller.controller_state(agent_controller)
-            volitile_labels.update(controller.actions_state(actions))
+            dynamic_state.update(controller.actions_state(current_actions))
             game_history.loc[len(game_history)] = list(dynamic_state.values())
 
         except KeyboardInterrupt:
@@ -161,6 +193,14 @@ def main() -> int:
 def get_discrete_state(state: np.array, env_min: np.array, delta: np.array) -> np.array:
     discrete_state = (state - env_min) / delta
     return tuple(discrete_state.astype(np.int16))
+
+
+def toggle_pause(pipe: int):
+    cmd_bytestr = bytes("%s %s\n" % ("PRESS", "START"), encoding="utf-8")
+    os.write(pipe, cmd_bytestr)
+    time.sleep(1)
+    cmd_bytestr = bytes("%s %s\n" % ("RELEASE", "START"), encoding="utf-8")
+    os.write(pipe, cmd_bytestr)
 
 
 def save_episode(date: dt.datetime, episode: int, df: pd.DataFrame, echo=False):
