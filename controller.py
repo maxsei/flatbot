@@ -194,6 +194,7 @@ def controller_state(controller: Controller) -> dict:
 # already have a configuration saved doing this is not necessary
 def callibrate_controller(controller: Controller, pipe: int, intvl: float, echo=False):
     # iterate over the default controller fields and send their results to dolphin
+    _reset_controller(controller, pipe, echo=echo)
     for field in fields(controller):
         controller_attr = getattr(controller, field.name)
         if echo:

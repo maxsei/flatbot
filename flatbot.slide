@@ -1,7 +1,136 @@
 Flatbot
+An Exploration of Game Data and Q Learning
 
 Maximillian Schulte
+Student at Flatiron School Houston
 
-* My Strategy
-foo bar
-.code temp.py
+Thu 01 Aug 2019
+
+
+* Goals and Challenges
+
+Goals
+
+- Build a pipeline to extract data in an efficient manner
+
+- Build a Q based decision model to play Super Smash Brother Melee
+
+
+Challenges
+
+- Game data is difficult to access
+
+- Smash has roughly 300 different possible states per character entity which doesn't 
+include the other possible game states a player could be in
+
+- The dimensionality of the problem is difficult to represent in memory
+- determining abstract strings of actions based on states is a daunting task
+
+
+* What is the Objective of Super Smash Bros. Melee
+
+In this game there are 2 opponents with 4 stocks (lives) a peice.  As players
+take damage from getting hit by moves, they gain what is called percent.  As
+players percentage increases, the knock back that a player recieves when getting
+hit by a move also increases.
+
+A competitors objective is to knock their opponent into one of the boundaries
+of the level. When a player crosses into one of these zones they will lose a
+stock.  Once a player has exhausted all of their stocks the opponent will have
+won the game.
+
+.image https://media0.giphy.com/media/1UR8l1x4Uyrok/200w.webp?cid=790b76115d432d874254694541b4fc49&rid=200w.webp 200 _
+
+
+* Obtaining Game Data
+The only way to obtain game information from an embedded console game is to
+observe changes in memory by dumping the RAM to an external hardware setup.  To
+be practical I went with using an Emulator Called Dolphin that can record the
+console hardware it emulates.  With Dolphin you can monitor changes in memory
+telling it which addresses to monitor.  When ever a specific region of memory
+is changed, Dolphin will report the address and its corresponding value to a
+UNIX Socket for collection.
+
+.image https://proxy.duckduckgo.com/iu/?u=https%3A%2F%2Ftse4.mm.bing.net%2Fth%3Fid%3DOIP.uQQfVMbZx5Fv08XAjuv0aQHaEF%26pid%3DApi&f=1
+
+
+* Memory Being Watched
+
+Here I have a text file containing the memory addresses I am currently
+observing changes in. These addresses were obtained by using the following data
+sheets ( Pointer Arithmetic not Included ):
+
+.link https://docs.google.com/spreadsheets/d/1JX2w-r2fuvWuNgGb6D3Cs4wHQKLFegZe2jhbBuIhCG8/edit#gid=12 SSBM Memory Addresses
+
+.link https://github.com/Achilles1515/20XX-Melee-Hack-Pack/blob/master/SSBM%20Facts.txt 20XX-Melee-Hack-Pack 
+
+.code Locations.txt
+
+
+* Interacting with the Game Environment
+- Dolphin can receive commands that are sent to it through a named pipe
+- A named pipe is a file on a system that acts as a means for receiving data in a first in first out order.  This means that data that is written to the pipe cannot be read from the pipe until everything writen before it has been read
+- Controller must be have limitations on how frequently its state can be modified
+.image controller-config.png _ 600
+
+
+* Full Data Pipeline
+- insert memory locations to monitor within Dolphin's memory watcher
+- decode the data reported back from the memory watcher
+- implement policy to take an action with the given data
+- send the action back to dolphin using the named pipe
+
+
+* What is Q Learning
+
+Q Learning is a means for assigning a reward for every given state in an
+evironment through trial and error.  The reward for any given state is
+represented by the Bellman Equation, that states for a given state (S) and
+action (A) there exists a policy (PI) that maximizes the sum of discounted
+rewards(R) over time.
+
+.image https://image.slidesharecdn.com/reinforcementlearning-170904070210/95/introduction-of-deep-reinforcement-learning-36-638.jpg?cb=1504578048
+
+* Q Learning Exercise
+
+.image https://proxy.duckduckgo.com/iu/?u=https%3A%2F%2Fs3-us-west-2.amazonaws.com%2Fcs188websitecontent%2Fprojects%2Frelease%2Freinforcement%2Fv1%2F001%2Fq-learning.png&f=1 _ 600
+
+
+* How Can we Design a Q learning Model to Play SSBM?
+
+There is too much state complexity to represent even if wanted to use relevant
+data such as wether or not the player can move or if they are invicible for a
+period of time.  This will limit the features that can be used but an attempt
+can still be made.
+
+Featured States:
+- p1.x, p2.x
+- p1.y, p2.y
+- p1.percentage, p2.percentage
+
+Actions:
+- stick directions
+- button presses (A, B, X, R)
+
+.image falcon_knee.gif 140 250
+
+
+* Why this Problem is too Complex to Model using Discrete Methods
+
+Dimensionality of the Problem:
+- currently the dimensionality of the the state action space is 56x38x10x56x38x10x9
+Number of Possible States:
+- 4075545600
+
+.image dimensions.png
+
+
+* A Remedy the Curse of Dimensionality:
+
+The alternative approach to representing the state/action pairs of a such a
+complicated space is to use a non-linear function approximator to approximate
+the utility of a given state.  The way the utility of a given state is learned
+is through Monty Carlo Simulations and Temporal Difference Learning which then a
+non-linear function can consume.
+
+.image value-function-approx.png _ 600
