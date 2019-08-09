@@ -71,7 +71,7 @@ sheets ( Pointer Arithmetic not Included ):
 - Dolphin can receive commands that are sent to it through a named pipe
 - A named pipe is a file on a system that acts as a means for receiving data in a first in first out order.  This means that data that is written to the pipe cannot be read from the pipe until everything writen before it has been read
 - Controller must be have limitations on how frequently its state can be modified
-.image controller-config.png _ 600
+.image images/controller-config.png _ 600
 
 
 * Full Data Pipeline
@@ -112,7 +112,7 @@ Actions:
 - stick directions
 - button presses (A, B, X, R)
 
-.image falcon_knee.gif 140 250
+.image images/falcon_knee.gif 140 250
 
 
 * Why this Problem is too Complex to Model using Discrete Methods
@@ -122,7 +122,7 @@ Dimensionality of the Problem:
 Number of Possible States:
 - 4075545600
 
-.image dimensions.png
+.image images/dimensions.png
 
 
 * A Remedy the Curse of Dimensionality:
@@ -133,4 +133,4 @@ the utility of a given state.  The way the utility of a given state is learned
 is through Monty Carlo Simulations and Temporal Difference Learning which then a
 non-linear function can consume.
 
-.image value-function-approx.png _ 600
+.image images/value-function-approx.png _ 600
